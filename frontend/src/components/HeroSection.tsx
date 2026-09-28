@@ -23,7 +23,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenTaxPortal
 }) => {
   return (
-    <section id="hero" className="relative overflow-hidden pt-8 pb-16 lg:pt-14 lg:pb-24 bg-gradient-to-b from-white via-[#f7f9f7] to-[#eef4f0]">
+    <section id="hero" className="relative isolate overflow-hidden pt-5 pb-12 sm:pt-7 sm:pb-14 lg:pt-10 lg:pb-20 bg-gradient-to-b from-white via-[#f7f9f7] to-[#eef4f0]">
       {/* Background subtle geometry */}
       <div className="absolute top-0 right-0 -z-10 w-96 h-96 rounded-full bg-emerald-100/60 blur-3xl pointer-events-none transform translate-x-1/3 -translate-y-1/3" />
       <div className="absolute bottom-0 left-0 -z-10 w-80 h-80 rounded-full bg-amber-100/60 blur-3xl pointer-events-none transform -translate-x-1/3 translate-y-1/3" />
@@ -31,36 +31,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section 8 Governance & Mission Badge */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200/80 text-xs sm:text-sm font-semibold shadow-2xs">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/85 text-emerald-900 border border-emerald-200 text-[11px] sm:text-xs font-semibold shadow-sm">
+            <span className="relative flex h-2 w-2 rounded-full bg-emerald-500">
+              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+            </span>
             <span>Govt. Recognized Section 8 Non-Profit (Reg. U85300KA2021NPL)</span>
           </div>
           
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 text-xs sm:text-sm font-semibold shadow-2xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/85 text-amber-900 border border-amber-200 text-[11px] sm:text-xs font-semibold shadow-sm">
             <ShieldCheck className="w-4 h-4 text-amber-600" />
             <span>12A & 80G Tax Exemption Certified</span>
           </div>
         </div>
 
         {/* Main Title & Subtitle */}
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12] font-serif">
-            Enabling <span className="text-emerald-700">Quality Education</span> & <span className="text-amber-600">Vital Healthcare</span> for Remote Villages
+        <div className="text-center max-w-5xl mx-auto">
+          <h1 className="text-[2rem] sm:text-5xl lg:text-6xl font-extrabold text-slate-950 tracking-tight leading-[1.08] font-serif text-balance">
+            Enabling <span className="text-emerald-800">Quality Education</span> & <br className="hidden sm:block" /><span className="text-amber-600">Vital Healthcare</span> for Remote Villages
           </h1>
           
-          <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-3xl mx-auto">
-            Akshaya Patra Welfare reaches deep into isolated hamlets without hospital access or fully equipped schools. 
-            We operate weekly mobile doctor dispensaries, provide free medicines, sponsor rural girl-child schooling, 
-            and equip government classrooms with modern STEM kits.
+          <p className="mt-4 sm:mt-5 text-[15px] sm:text-lg text-slate-600 leading-7 font-normal max-w-3xl mx-auto text-pretty">
+            We work in remote hamlets where hospitals and well-equipped schools are out of reach. Weekly mobile clinics, free medicines, rural girls’ education, and classroom STEM kits bring practical support closer to families.
           </p>
         </div>
 
         {/* Primary Action Dual CTAs with Clear Legal Distinctions */}
-        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 max-w-2xl mx-auto">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-3xl mx-auto">
           
           {/* Action 1: Direct Donation (80G Tax Exemption) */}
-          <div className="flex-1 bg-white p-4 rounded-2xl border-2 border-emerald-600 shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between group">
+          <div className="flex-1 bg-white/95 p-4 sm:p-5 rounded-2xl border border-emerald-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group">
             <div className="flex items-center justify-between mb-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
@@ -82,7 +82,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Action 2: Shop Welfare Goods (100% Profits to Aid, No Tax Exemption) */}
-          <div className="flex-1 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+          <div className="flex-1 bg-white/95 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group">
             <div className="flex items-center justify-between mb-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
                 <ShoppingBag className="w-3.5 h-3.5 text-amber-700" />
@@ -106,7 +106,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* Real Impact Metrics Counter Strip */}
-        <div className="mt-8 sm:mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 max-w-5xl mx-auto">
+        <div className="mt-9 sm:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 max-w-5xl mx-auto">
           
           <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
             <div className="flex items-center gap-3">

@@ -232,11 +232,6 @@ export default function App() {
           setSelectedCauseForDonate(null);
           setIsDonateOpen(true);
         }}
-        onOpenWhatsApp={() => {
-          setWhatsAppProduct(null);
-          setWhatsAppCustomMsg(undefined);
-          setIsWhatsAppModalOpen(true);
-        }}
         onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
         onNavigate={handleNavigate}
       />
@@ -328,6 +323,27 @@ export default function App() {
         onOpenSellerPortal={() => setIsSellerPortalOpen(true)}
         onNavigate={handleNavigate}
       />
+
+      <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:right-6 sm:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] z-40 group">
+        <span className="pointer-events-none absolute right-[4.25rem] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          Order on WhatsApp
+        </span>
+        <button
+          type="button"
+          aria-label="Order on WhatsApp"
+          title="Order on WhatsApp"
+          onClick={() => {
+            setWhatsAppProduct(null);
+            setWhatsAppCustomMsg(undefined);
+            setIsWhatsAppModalOpen(true);
+          }}
+          className="flex h-14 w-14 items-center justify-center rounded-full border border-white/70 bg-[#25D366] text-white shadow-lg shadow-emerald-950/20 transition-colors hover:bg-[#1fbd5b] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
+        >
+          <svg viewBox="0 0 32 32" aria-hidden="true" className="h-7 w-7 fill-current">
+            <path d="M16.02 3C8.85 3 3.01 8.84 3.01 16.01c0 2.29.6 4.44 1.64 6.31L3 29l6.86-1.6a12.94 12.94 0 0 0 6.16 1.56h.01c7.17 0 13.01-5.84 13.01-13.01S23.19 3 16.02 3Zm0 23.75h-.01a10.8 10.8 0 0 1-5.5-1.5l-.4-.24-4.07.95 1.09-3.97-.26-.41a10.73 10.73 0 0 1-1.65-5.57c0-5.96 4.85-10.81 10.81-10.81a10.74 10.74 0 0 1 10.81 10.81c0 5.96-4.85 10.81-10.82 10.81Zm5.93-8.1c-.32-.16-1.92-.95-2.21-1.05-.3-.11-.52-.16-.73.16-.22.32-.84 1.05-1.03 1.27-.19.22-.38.24-.7.08-.33-.16-1.37-.5-2.61-1.61-.96-.86-1.61-1.92-1.8-2.24-.19-.32-.02-.5.14-.66.15-.15.33-.38.49-.57.16-.19.22-.33.32-.54.11-.22.05-.41-.02-.57-.08-.16-.73-1.76-1-2.41-.26-.63-.53-.55-.73-.56l-.62-.01c-.22 0-.57.08-.87.41-.3.32-1.13 1.11-1.13 2.7s1.16 3.14 1.32 3.35c.16.22 2.28 3.49 5.53 4.89.77.33 1.38.53 1.85.68.77.25 1.48.21 2.04.13.62-.1 1.92-.79 2.19-1.54.27-.76.27-1.41.19-1.54-.08-.14-.3-.22-.62-.38Z" />
+          </svg>
+        </button>
+      </div>
 
       {/* Modals & Drawers */}
 
