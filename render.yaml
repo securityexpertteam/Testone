@@ -1,0 +1,63 @@
+# Render Blueprint specification for Akshaya Patra Welfare
+# Supports deploying both as separate services (Frontend + Backend) or unified full-stack
+
+services:
+  # ==========================================
+  # 1. BACKEND API SERVICE (Node / Express)
+  # ==========================================
+  - type: web
+    name: akshaya-patra-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: akshaya_patra
+      - key: MONGODB_BACKUP_URI
+        sync: false
+      - key: MONGODB_BACKUP_DB
+        value: akshaya_patra_backup
+      - key: OTP_HASH_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+    healthCheckPath: /api/health
+
+  # ==========================================
+  # 2. FRONTEND STATIC WEB APP (Vite / React)
+  # ==========================================
+  - type: web
+    name: akshaya-patra-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: akshaya-patra-backend
+          property: host

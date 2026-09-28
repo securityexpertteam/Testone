@@ -1,0 +1,6 @@
+{
+  "name": "Akshaya Patra Welfare - Education & Medical Aid for Remote Villages",
+  "description": "Section 8 non-profit organization enabling quality education, school supplies, and vital medical support for underprivileged and remote village communities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
