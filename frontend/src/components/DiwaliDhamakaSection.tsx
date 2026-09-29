@@ -62,27 +62,27 @@ export const DiwaliDhamakaSection: React.FC<DiwaliDhamakaSectionProps> = ({
   };
 
   return (
-    <section id="diwali-special" className="relative py-14 sm:py-20 bg-gradient-to-b from-[#0a331f] via-[#08291c] to-[#041a13] text-white overflow-hidden border-y-2 border-amber-500/40">
+    <section id="diwali-special" className="relative overflow-hidden border-y border-emerald-950/5 bg-[#f2f9f6] py-12 text-[#173f38] sm:py-16">
       {/* Decorative festive lanterns & sparkles backdrop */}
       <div className="absolute top-0 right-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto w-full max-w-none px-[32px] relative z-10">
         
         {/* Festive Header Banner */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 border border-amber-400/40 text-amber-300 text-xs sm:text-sm font-bold uppercase tracking-wider mb-4 shadow-lg">
-            <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-900 shadow-sm sm:text-sm">
+            <Flame className="w-4 h-4 text-amber-700" />
             <span>Diwali Welfare Special • Bring Light to Remote Villages</span>
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-4 h-4 text-amber-700" />
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-serif text-white leading-tight">
-            {crackerProduct.name} <span className="text-amber-400 font-mono">₹{crackerProduct.price.toLocaleString('en-IN')}</span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-serif text-[#173f38] leading-tight">
+            {crackerProduct.name} <span className="text-amber-700 font-mono">₹{crackerProduct.price.toLocaleString('en-IN')}</span>
           </h2>
           
-          <p className="mt-3 text-sm sm:text-base text-amber-100/80 max-w-2xl mx-auto">
-            {crackerProduct.description} Net welfare contribution: <strong className="text-amber-300">₹{crackerProduct.profitToCause.toLocaleString('en-IN')}</strong> per item.
+          <p className="mt-3 text-sm sm:text-base text-[#58736c] max-w-2xl mx-auto">
+            {crackerProduct.description} Net welfare contribution: <strong className="text-emerald-800">₹{crackerProduct.profitToCause.toLocaleString('en-IN')}</strong> per item.
           </p>
 
           {raffle?.enabled && <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md animate-pulse">
@@ -92,7 +92,7 @@ export const DiwaliDhamakaSection: React.FC<DiwaliDhamakaSectionProps> = ({
         </div>
 
         {/* Product & Raffle Dual Showcase Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="grid grid-cols-1 items-stretch gap-8 rounded-[2rem] bg-gradient-to-br from-[#0a331f] via-[#08291c] to-[#041a13] p-4 text-white shadow-xl sm:p-7 lg:grid-cols-12">
           
           {/* Left Column: The Diwali Crackers Family Pack Card (₹2,000) */}
           <div className="lg:col-span-7 bg-white/5 backdrop-blur-md rounded-3xl border border-amber-500/30 p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden">

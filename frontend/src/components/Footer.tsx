@@ -1,4 +1,5 @@
 import React from 'react';
+import { displayValue, organization } from '../config/organization';
 import { 
   Heart, 
   ShieldCheck, 
@@ -24,8 +25,8 @@ export const Footer: React.FC<FooterProps> = ({
   onNavigate
 }) => {
   return (
-    <footer className="bg-[#edf5ef] text-slate-700 pt-16 pb-12 border-t border-emerald-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="border-t border-emerald-950/10 bg-[#f2f9f6] py-16 text-slate-700 sm:py-20">
+      <div className="mx-auto w-full max-w-none px-[32px]">
         
         {/* Main 4-Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-emerald-200">
@@ -37,21 +38,20 @@ export const Footer: React.FC<FooterProps> = ({
                 AP
               </div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold font-serif text-emerald-950 tracking-tight">Akshaya Patra</span>
-                <span className="text-xl font-bold font-serif text-amber-500 tracking-tight">Welfare</span>
+            <span className="text-xl font-bold font-serif text-emerald-950 tracking-tight">{organization.legalName || 'Akshaya Patra Welfare Foundation'}</span>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
+            <p className="max-w-md text-xs leading-relaxed text-[#526b64] sm:text-sm">
               A registered Section 8 Non-Profit company dedicated to bridging severe healthcare and educational disparities in isolated rural hamlets across India. We deploy mobile medical clinics, provide free medicines, sponsor rural girl-child schooling, and deliver classroom STEM packs.
             </p>
 
             <div className="flex items-center gap-2 pt-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-900">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Section 8 Licensed
               </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-950 text-amber-400 border border-amber-800">
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-900">
                 12A & 80G Certified
               </span>
             </div>
@@ -63,24 +63,24 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-950 mb-4 font-serif">
               Village Causes
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-400">
+            <ul className="space-y-2.5 text-xs text-[#526b64]">
               <li>
-                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   Remote Mobile Medical Camps
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   Rural Classroom STEM Kits
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   Girl-Child Commute & Scholarships
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('causes')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   Emergency Pediatric Nutrition
                 </button>
               </li>
@@ -97,25 +97,25 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-950 mb-4 font-serif">
               Compliance & Audit
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-400">
+            <ul className="space-y-2.5 text-xs text-[#526b64]">
               <li>
-                <button onClick={onOpenTaxPortal} className="hover:text-emerald-400 transition cursor-pointer text-left flex items-center gap-1">
+                <button onClick={onOpenTaxPortal} className="hover:text-emerald-800 transition cursor-pointer text-left flex items-center gap-1">
                   <FileText className="w-3 h-3 text-emerald-400" />
                   <span>My 80G Tax Certificates</span>
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('tax-rules')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('tax-rules')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   80G Exemption Guidelines
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('transparency')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('transparency')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   Section 8 Statutory Audits
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('how-pledges-work')} className="hover:text-emerald-400 transition cursor-pointer text-left">
+                <button onClick={() => onNavigate('how-pledges-work')} className="hover:text-emerald-800 transition cursor-pointer text-left">
                   How Pledges Work
                 </button>
               </li>
@@ -136,7 +136,7 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-950 mb-4 font-serif">
               Welfare Desk
             </h4>
-            <div className="space-y-3 text-xs text-slate-400">
+            <div className="space-y-3 text-xs text-[#526b64]">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Akshaya Patra Welfare Foundation, Bangalore Rural & Regional Field Units, Karnataka, India</span>
@@ -184,12 +184,12 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Bottom Legal Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 pt-4 border-t border-emerald-200">
           <div>
-            © {new Date().getFullYear()} Akshaya Patra Welfare Foundation. All rights reserved. CIN: U85300KA2021NPL148920.
+            © {new Date().getFullYear()} {organization.legalName || 'Akshaya Patra Welfare Foundation'}. All rights reserved. CIN: {displayValue(organization.cin)}.
           </div>
           <div className="flex items-center gap-4 text-[11px]">
-            <span>Income Tax 80G URN: AACTA1234BF20214_01</span>
+            <span>Income Tax 80G URN: {displayValue(organization.urn80G)}</span>
             <span>•</span>
-            <span>NITI Aayog NGO Darpan: KA/2021/0289145</span>
+            <span>NITI Aayog NGO Darpan: {displayValue(organization.darpanId)}</span>
           </div>
         </div>
 

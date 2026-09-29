@@ -54,30 +54,29 @@ export const HowPledgesWorkSection: React.FC<HowPledgesWorkSectionProps> = ({
   ];
 
   return (
-    <section id="how-pledges-work" className="py-16 sm:py-24 bg-white border-t border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="how-pledges-work" className="scroll-mt-20 border-t border-emerald-950/5 bg-[#f2f9f6] py-16 sm:py-20">
+      <div className="mx-auto w-full max-w-none px-[32px]">
         
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-14">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/65 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
             <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-            Zero-Leakage Model
+            A clearer way to give
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
-            How Pledges & Welfare Support Work
+          <h2 className="text-4xl font-medium leading-tight tracking-tight text-[#173f38] sm:text-5xl">
+            The difference matters
           </h2>
-          <p className="mt-3 text-base sm:text-lg text-slate-600">
-            A transparent four-step cycle ensuring every single Rupee contributed directly transforms 
-            healthcare access and educational opportunities in remote Indian villages.
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#58736c] sm:text-base">
+            Direct donations and shop purchases support the mission in different ways. Here is what to expect from each.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {steps.map((step, idx) => {
             const Icon = step.icon;
             return (
               <div 
                 key={idx}
-                className="bg-slate-50/80 rounded-3xl p-6 sm:p-7 border border-slate-200/80 hover:border-emerald-300 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                className="group flex flex-col justify-between rounded-[1.6rem] border border-white/80 bg-white/55 p-5 shadow-[0_18px_48px_-32px_rgba(23,63,56,0.34)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-[0_24px_60px_-30px_rgba(23,63,56,0.25)] sm:p-6"
               >
                 <div>
                   <div className="flex items-center justify-between mb-5">
@@ -89,11 +88,11 @@ export const HowPledgesWorkSection: React.FC<HowPledgesWorkSectionProps> = ({
                     </span>
                   </div>
 
-                  <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-900 mb-4 group-hover:scale-110 transition-transform">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-900/10 bg-white/80 text-slate-900 shadow-sm transition-transform group-hover:scale-105">
                     <Icon className="w-6 h-6 text-emerald-700" />
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-900 font-serif leading-snug">
+                  <h3 className="text-xl font-medium leading-snug text-[#173f38]">
                     {step.title}
                   </h3>
                   <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -111,7 +110,7 @@ export const HowPledgesWorkSection: React.FC<HowPledgesWorkSectionProps> = ({
         </div>
 
         {/* Banner with pledge CTA */}
-        <div className="mt-14 max-w-4xl mx-auto bg-gradient-to-r from-emerald-900 to-[#0e4429] rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg">
+          <div className="mx-auto mt-10 flex max-w-4xl flex-col items-center justify-between gap-5 rounded-[1.8rem] border border-white/15 bg-[#174c40] p-6 text-white shadow-[0_20px_50px_rgba(23,76,64,0.18)] sm:mt-12 sm:flex-row sm:p-8">
           <div>
             <span className="inline-block text-xs font-bold text-amber-300 uppercase tracking-wider mb-1">
               Start Your Village Sponsorship

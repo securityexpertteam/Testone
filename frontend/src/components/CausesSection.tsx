@@ -27,81 +27,80 @@ export const CausesSection: React.FC<CausesSectionProps> = ({
   });
 
   return (
-    <section id="causes" className="py-16 sm:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="causes" className="scroll-mt-20 bg-[#f2f9f6] py-16 sm:py-20">
+      <div className="mx-auto w-full max-w-none px-[32px]">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div className="mb-10 flex flex-col justify-between gap-6 md:mb-12 md:flex-row md:items-end">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-              <Heart className="w-3.5 h-3.5 fill-emerald-700 text-emerald-700" />
-              Core Welfare Causes
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/65 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
+              <Heart className="h-3.5 w-3.5 fill-emerald-700 text-emerald-700" />
+              Two pillars · one shared future
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
-              Education & Medical Support for Remote Villages
+            <h2 className="text-4xl font-medium leading-tight tracking-tight text-[#173f38] sm:text-5xl">
+              Where your support goes
             </h2>
-            <p className="mt-3 text-slate-600 text-base leading-relaxed">
-              Every direct contribution directly powers mobile clinic fuel, certified doctor honorariums, prescription medicines, 
-              classroom benches, and student learning supplies. All direct donations receive instant 80G tax exemption certificates.
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[#58736c] sm:text-base">
+              Healthcare and education are at the heart of our work in remote villages. Choose a cause to see how direct support can help.
             </p>
           </div>
 
           {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl shrink-0 self-start md:self-auto border border-slate-200">
+          <div className="flex max-w-full flex-wrap items-center gap-1 rounded-full border border-white/80 bg-white/55 p-1.5 shadow-sm backdrop-blur-xl self-start md:self-auto">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`rounded-full px-4 py-2.5 text-xs font-semibold transition cursor-pointer ${
                 filter === 'all'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              All Causes ({CHARITY_CAUSES.length})
+              All ({CHARITY_CAUSES.length})
             </button>
             <button
               onClick={() => setFilter('medical')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold transition cursor-pointer ${
                 filter === 'medical'
                   ? 'bg-emerald-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-emerald-700'
               }`}
             >
               <Stethoscope className="w-4 h-4" />
-              <span>Medical Aid</span>
+              <span>Health</span>
             </button>
             <button
               onClick={() => setFilter('education')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold transition cursor-pointer ${
                 filter === 'education'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-amber-700'
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              <span>Village Education</span>
+              <span>Education</span>
             </button>
           </div>
         </div>
 
         {/* Cause Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
           {filteredCauses.map((cause) => {
             const progress = Math.min(100, Math.round((cause.raisedAmount / cause.targetAmount) * 100));
 
             return (
               <div 
                 key={cause.id}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                className="group flex flex-col justify-between overflow-hidden rounded-[1.9rem] border border-white/80 bg-white/55 p-2.5 shadow-[0_18px_48px_-32px_rgba(23,63,56,0.34)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-[0_24px_60px_-30px_rgba(23,63,56,0.3)]"
               >
                 <div>
                   {/* Image Container with Badges */}
-                  <div className="relative h-60 w-full overflow-hidden bg-slate-100">
+                  <div className="relative h-52 w-full overflow-hidden rounded-[1.5rem] bg-emerald-100 sm:h-60">
                     <img 
                       src={cause.image} 
                       alt={cause.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#123e35]/65 via-transparent to-[#123e35]/10" />
                     
                     {/* Top badges */}
                     <div className="absolute top-4 left-4 flex items-center gap-2">
@@ -127,7 +126,7 @@ export const CausesSection: React.FC<CausesSectionProps> = ({
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-6">
+                  <div className="px-4 pb-4 pt-5 sm:px-5">
                     <div className="flex items-center gap-2 mb-2">
                       {cause.category === 'medical' ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
@@ -145,7 +144,7 @@ export const CausesSection: React.FC<CausesSectionProps> = ({
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-slate-900 font-serif leading-snug group-hover:text-emerald-800 transition-colors">
+                    <h3 className="text-2xl font-medium leading-tight text-[#173f38] transition-colors group-hover:text-emerald-800">
                       {cause.title}
                     </h3>
                     <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
@@ -194,10 +193,10 @@ export const CausesSection: React.FC<CausesSectionProps> = ({
                 </div>
 
                 {/* Card Action Button */}
-                <div className="p-6 pt-0">
+                  <div className="px-4 pb-4 sm:px-5 sm:pb-5">
                   <button
                     onClick={() => onSelectCauseForDonation(cause)}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0e4429] hover:bg-[#072a19] text-white font-bold text-sm shadow cursor-pointer transition group/btn"
+                    className="group/btn flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#174c40] px-4 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-950/10 transition hover:bg-[#103d33] hover:shadow-lg cursor-pointer"
                   >
                     <Heart className="w-4 h-4 fill-amber-400 text-amber-400" />
                     <span>Support This Cause (80G Tax-Exempt)</span>

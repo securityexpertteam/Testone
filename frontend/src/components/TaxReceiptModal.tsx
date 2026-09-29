@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { DonationRecord } from '../types';
+import { displayValue, organization } from '../config/organization';
 import { 
   X, 
   Printer, 
@@ -11,6 +12,23 @@ import {
   QrCode,
   Heart
 } from 'lucide-react';
+
+const SAMPLE_RECEIPT: DonationRecord = {
+  id: 'sample-preview-only',
+  donorName: 'Sample Donor',
+  email: 'sample@example.invalid',
+  phone: '+91 XXXXX XXXXX',
+  panNumber: 'ABCDE••••F',
+  address: 'Sample City',
+  amount: 1000,
+  causeId: 'sample-cause',
+  causeTitle: 'Sample charitable contribution',
+  date: 'DD MMM YYYY',
+  receiptNumber: 'SAMPLE-80G-000000',
+  urn80G: 'SAMPLE-URN-NOT-VALID',
+  financialYear: 'YYYY–YY',
+  status: 'COMPLETED',
+};
 
 interface TaxReceiptModalProps {
   isOpen: boolean;
@@ -34,8 +52,11 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
   if (!isOpen) return null;
 
   const currentRecord = records.find((r) => r.id === activeRecordId) || records[0];
+  const isSample = !currentRecord;
+  const displayRecord = currentRecord || SAMPLE_RECEIPT;
 
   const handlePrint = () => {
+    if (isSample) return;
     window.print();
   };
 
@@ -52,19 +73,23 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                 My 80G Tax Exemption Certificates
               </h3>
               <p className="text-xs text-slate-400">
-                Official Form 10BE Tax Exemption Receipts for ITR Filing
+                {isSample ? 'Example only · no donor or internal account data' : 'Your Form 10BE donation receipts'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition cursor-pointer shadow-xs"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print / Save PDF</span>
-            </button>
+            {isSample ? (
+              <span className="rounded-lg border border-amber-300/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200">Sample Preview</span>
+            ) : (
+              <button
+                onClick={handlePrint}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition cursor-pointer shadow-xs"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print / Save PDF</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
@@ -96,7 +121,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
 
         {/* Official 80G Certificate Document Canvas */}
         <div className="p-4 sm:p-8 max-h-[75vh] overflow-y-auto bg-slate-50/50">
-          {currentRecord ? (
+          {displayRecord ? (
             <div 
               ref={printRef}
               className="bg-white p-6 sm:p-10 rounded-2xl border-2 border-emerald-800/80 shadow-md relative overflow-hidden text-slate-900"
@@ -104,7 +129,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
               {/* Watermark in background */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
                 <span className="text-8xl font-black rotate-[-25deg] text-emerald-950 uppercase tracking-widest font-serif">
-                  SECTION 80G
+                  {isSample ? 'SAMPLE · NOT VALID' : 'SECTION 80G'}
                 </span>
               </div>
 
@@ -112,21 +137,21 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
               <div className="text-center pb-6 border-b-2 border-slate-200 relative">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-bold uppercase tracking-wider mb-2 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                  Form 10BE / Section 80G Statutory Donation Receipt
+                  {isSample ? 'Illustrative receipt layout · not a tax certificate' : 'Form 10BE / Section 80G Statutory Donation Receipt'}
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-900 tracking-tight">
-                  AKSHAYA PATRA WELFARE FOUNDATION
+                  {organization.legalName || 'Organization Name'}
                 </h1>
                 <p className="text-xs text-slate-600 mt-1">
                   (A Section 8 Non-Profit Company Licensed under Companies Act, 2013)
                 </p>
                 <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono">
-                  <span>CIN: U85300KA2021NPL148920</span>
+                  <span>CIN: {isSample ? 'SAMPLE-CIN-XXXXXX' : displayValue(organization.cin)}</span>
                   <span>•</span>
-                  <span>Income Tax 80G URN: AACTA1234BF20214_01</span>
+                  <span>Income Tax 80G URN: {isSample ? 'SAMPLE-URN-NOT-VALID' : displayValue(organization.urn80G)}</span>
                   <span>•</span>
-                  <span>12A URN: AACTA1234BF20214</span>
+                  <span>12A URN: {isSample ? 'SAMPLE-URN-NOT-VALID' : displayValue(organization.urn12A)}</span>
                 </div>
               </div>
 
@@ -134,19 +159,19 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-slate-200 text-xs bg-slate-50/80 -mx-6 sm:-mx-10 px-6 sm:px-10">
                 <div>
                   <span className="text-slate-400 block font-medium">Receipt Number:</span>
-                  <span className="font-mono font-bold text-slate-900">{currentRecord.receiptNumber}</span>
+                  <span className="font-mono font-bold text-slate-900">{displayRecord.receiptNumber}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block font-medium">Date of Donation:</span>
-                  <span className="font-bold text-slate-900">{currentRecord.date}</span>
+                  <span className="font-bold text-slate-900">{displayRecord.date}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block font-medium">Financial Year:</span>
-                  <span className="font-bold text-slate-900">{currentRecord.financialYear}</span>
+                  <span className="font-bold text-slate-900">{displayRecord.financialYear}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block font-medium">Form 10BE Filing Ref:</span>
-                  <span className="font-mono font-bold text-emerald-700">10BE/2024-25/089412</span>
+                  <span className="font-mono font-bold text-emerald-700">{isSample ? 'SAMPLE-10BE-XXXXXX' : displayValue(organization.orderNumber80G, 'Generated with Form 10BE')}</span>
                 </div>
               </div>
 
@@ -158,10 +183,10 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                       Donor Name (as per PAN):
                     </span>
                     <span className="text-base font-bold text-slate-900">
-                      {currentRecord.donorName}
+                      {displayRecord.donorName}
                     </span>
                     <span className="text-xs text-slate-500 block mt-0.5">
-                      {currentRecord.email} | {currentRecord.phone}
+                      {displayRecord.email} | {displayRecord.phone}
                     </span>
                   </div>
 
@@ -170,7 +195,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                       Permanent Account Number (PAN):
                     </span>
                     <span className="text-base font-mono font-extrabold text-slate-900">
-                      {currentRecord.panNumber}
+                      {displayRecord.panNumber}
                     </span>
                     <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5 flex items-center gap-1">
                       <CheckCircle className="w-3 h-3 text-emerald-600" />
@@ -186,7 +211,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                         Purpose of Charitable Contribution:
                       </span>
                       <span className="text-sm font-bold text-slate-900">
-                        {currentRecord.causeTitle}
+                        {displayRecord.causeTitle}
                       </span>
                       <span className="text-xs text-slate-600 block mt-0.5">
                         Enabling free doctor visits, medicines, and educational supplies for remote villages.
@@ -196,7 +221,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                     <div className="text-right shrink-0">
                       <span className="text-xs text-slate-500 block">Total Amount Donated:</span>
                       <span className="text-2xl font-black text-emerald-800 font-mono">
-                        ₹{currentRecord.amount.toLocaleString('en-IN')}
+                        ₹{displayRecord.amount.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
@@ -206,7 +231,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
               {/* Statutory Legal Declaration */}
               <div className="py-4 border-t border-slate-200 text-xs text-slate-600 leading-relaxed space-y-2">
                 <p>
-                  <strong>Statutory Tax Deduction Note:</strong> This direct contribution is exempt under Section 80G(5)(vi) of the Income Tax Act, 1961 vide Order No. AACTA1234BF20214_01. The donor is eligible for 50% deduction of the amount donated from their taxable total income.
+                  {isSample ? <><strong>Sample notice:</strong> This is a visual example only. It is not an issued receipt, does not verify a donation, and must not be used for tax filing.</> : <><strong>Statutory Tax Deduction Note:</strong> This direct contribution is exempt under Section 80G(5)(vi) of the Income Tax Act, 1961 vide Order No. {displayValue(organization.orderNumber80G, organization.urn80G)}. The donor is eligible for {displayValue(organization.deductionPercent, '50')}% deduction of the amount donated from their taxable total income.</>}
                 </p>
                 <p className="text-[11px] text-slate-500">
                   Note: In compliance with Rule 18AB of the Income Tax Rules, 1962, this contribution is reported in the annual Statement of Donations (Form 10BD) to the Director of Income Tax (Exemption).
@@ -218,12 +243,12 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                 
                 {/* QR Code Verification Stamp */}
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 bg-slate-900 rounded-lg p-1.5 flex items-center justify-center text-white shrink-0">
+                  <div className={`w-14 h-14 rounded-lg p-1.5 flex items-center justify-center shrink-0 ${isSample ? 'bg-slate-200 text-slate-500' : 'bg-slate-900 text-white'}`}>
                     <QrCode className="w-11 h-11" />
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    <span className="font-bold text-slate-800 block">Digitally Signed & Validated</span>
-                    <span>Scan to verify 80G certificate on national portal</span>
+                    <span className="font-bold text-slate-800 block">{isSample ? 'Sample graphic only' : 'Digitally Signed & Validated'}</span>
+                    <span>{isSample ? 'No verification code in this preview' : 'Scan to verify 80G certificate on national portal'}</span>
                   </div>
                 </div>
 
@@ -231,7 +256,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                 <div className="text-center sm:text-right">
                   <div className="inline-block text-center border-b border-slate-400 pb-1 mb-1 px-4">
                     <span className="font-serif italic font-bold text-emerald-900 text-sm">
-                      S. Konduru
+                      {isSample ? 'Sample Signatory' : displayValue(organization.authorizedSignatory, 'Authorized Signatory')}
                     </span>
                   </div>
                   <span className="block text-xs font-bold text-slate-900">Authorized Signatory</span>

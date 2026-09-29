@@ -1,4 +1,5 @@
 import React from 'react';
+import { displayValue, organization } from '../config/organization';
 import { 
   ShieldCheck, 
   FileText, 
@@ -15,56 +16,56 @@ export const TransparencySection: React.FC = () => {
   const registrations = [
     {
       title: 'Company Registration (MCA)',
-      regNo: 'CIN: U85300KA2021NPL148920',
+      regNo: `CIN: ${displayValue(organization.cin)}`,
       authority: 'Ministry of Corporate Affairs, Govt. of India',
       status: 'Active Section 8 Non-Profit'
     },
     {
       title: 'Income Tax 12A Exemption',
-      regNo: 'URN: AACTA1234BF20214',
+      regNo: `URN: ${displayValue(organization.urn12A)}`,
       authority: 'Income Tax Department of India',
       status: 'Perpetual Recognition'
     },
     {
       title: 'Section 80G Tax Exemption',
-      regNo: 'URN: AACTA1234BF20214_01',
+      regNo: `URN: ${displayValue(organization.urn80G)}`,
       authority: 'Income Tax Department (Form 10BE Compliance)',
-      status: '50% Donor Tax Deduction'
+      status: `${displayValue(organization.deductionPercent, '50')}% Donor Tax Deduction`
     },
     {
       title: 'NITI Aayog NGO Darpan',
-      regNo: 'DARPAN ID: KA/2021/0289145',
+      regNo: `DARPAN ID: ${displayValue(organization.darpanId)}`,
       authority: 'NITI Aayog, Govt. of India',
       status: 'Verified National Portal'
     },
     {
       title: 'CSR-1 Registration',
-      regNo: 'Reg No: CSR00028491',
+      regNo: `Reg No: ${displayValue(organization.csr1Registration)}`,
       authority: 'Ministry of Corporate Affairs',
       status: 'Eligible for Corporate CSR Funds'
     },
     {
       title: 'Bank Accounts & Auditing',
-      regNo: 'Dedicated Escrow Welfare Account',
-      authority: 'Audited Annually by Independent Statutory CAs',
+      regNo: displayValue(organization.escrowAccountLabel),
+      authority: displayValue(organization.auditDescription),
       status: 'Unqualified Audit Opinions'
     }
   ];
 
   return (
-    <section id="transparency" className="py-16 sm:py-24 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="transparency" className="scroll-mt-20 border-t border-emerald-950/5 bg-[#f2f9f6] py-16 sm:py-20">
+      <div className="mx-auto w-full max-w-none px-[32px]">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-14">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/65 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
             Statutory & Legal Compliance
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
+          <h2 className="text-4xl font-medium leading-tight tracking-tight text-[#173f38] sm:text-5xl">
             Section 8 Non-Profit Transparency
           </h2>
-          <p className="mt-3 text-base sm:text-lg text-slate-600">
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#58736c] sm:text-base">
             Akshaya Patra Welfare is incorporated as a non-profit company under Section 8 of the Companies Act, 2013. 
             By constitutional mandate, no profits or dividends may ever be paid to directors; every surplus Rupee 
             is legally bounded to village medical aid and grassroots education.
@@ -72,11 +73,11 @@ export const TransparencySection: React.FC = () => {
         </div>
 
         {/* Legal Credentials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+        <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:mb-14">
           {registrations.map((item, idx) => (
             <div 
               key={idx}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition"
+              className="rounded-[1.5rem] border border-white/80 bg-white/55 p-5 shadow-[0_18px_48px_-32px_rgba(23,63,56,0.3)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/80 sm:p-6"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CharityCause, DonationRecord } from '../types';
 import { CHARITY_CAUSES } from '../data/causes';
+import { organization } from '../config/organization';
 import { 
   X, 
   Heart, 
@@ -80,7 +81,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({
         causeTitle: currentCause.title,
         date: now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         receiptNumber: receiptNo,
-        urn80G: 'AACTA1234BF20214_01',
+        urn80G: organization.urn80G,
         financialYear: '2024-2025',
         status: 'COMPLETED'
       };
@@ -126,7 +127,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({
             <span>Eligible for 50% Tax Deduction under Section 80G</span>
           </div>
           <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
-            URN: AACTA1234BF20214_01
+            URN: {organization.urn80G}
           </span>
         </div>
 

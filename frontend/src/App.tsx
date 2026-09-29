@@ -19,26 +19,6 @@ import { SellerPortalModal } from './components/SellerPortalModal';
 import { Footer } from './components/Footer';
 import { API_BASE_URL } from './utils/api';
 
-// Default initial verified 80G receipt for "My 80G (1)" as seen in the header badge
-const INITIAL_TAX_RECEIPTS: DonationRecord[] = [
-  {
-    id: 'don-initial-sample',
-    donorName: 'Subhash Konduru',
-    email: 'securityexpert2011@gmail.com',
-    phone: '+91 98765 43210',
-    panNumber: 'ABCDE1234F',
-    address: 'Bangalore, Karnataka, India',
-    amount: 5000,
-    causeId: 'cause-mobile-clinic',
-    causeTitle: 'Remote Village Mobile Medical Camps & Lifesaving Medicines',
-    date: '24 Sep 2026',
-    receiptNumber: 'APW-80G-2026-784192',
-    urn80G: 'AACTA1234BF20214_01',
-    financialYear: '2026-2027',
-    status: 'COMPLETED'
-  }
-];
-
 export default function App() {
   // Navigation & Modals State
   const [isDonateOpen, setIsDonateOpen] = useState(false);
@@ -47,9 +27,17 @@ export default function App() {
   const [isTaxPortalOpen, setIsTaxPortalOpen] = useState(false);
   const [taxReceipts, setTaxReceipts] = useState<DonationRecord[]>(() => {
     const saved = localStorage.getItem('apw_tax_receipts');
-    return saved ? JSON.parse(saved) : INITIAL_TAX_RECEIPTS;
+    if (!saved) return [];
+    try {
+      const parsed: unknown = JSON.parse(saved);
+      return Array.isArray(parsed)
+        ? parsed.filter((record): record is DonationRecord => record && typeof record === 'object' && record.id !== 'don-initial-sample')
+        : [];
+    } catch {
+      return [];
+    }
   });
-  const [activeReceiptId, setActiveReceiptId] = useState<string | null>(INITIAL_TAX_RECEIPTS[0].id);
+  const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<WelfareProduct[]>([]);
@@ -221,7 +209,7 @@ export default function App() {
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0) + iphoneTicketsCount;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafaf8] text-slate-800 font-sans selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen flex flex-col bg-[#f2f9f6] text-slate-800 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       
       {/* Main Header / Navigation (Clean, no 80G rules, no Seller Login) */}
       <Navbar
@@ -245,11 +233,35 @@ export default function App() {
             setSelectedCauseForDonate(null);
             setIsDonateOpen(true);
           }}
-          onOpenShop={() => handleNavigate('diwali-special')}
+          onOpenShop={() => handleNavigate('shop-goods')}
           onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
         />
 
+        {/* The two causes are the primary path after the landing section. */}
+        <CausesSection 
+          onSelectCauseForDonation={(cause) => {
+            setSelectedCauseForDonate(cause);
+            setIsDonateOpen(true);
+          }}
+        />
+
         {/* DIWALI CRACKERS MEGA FAMILY PACK (₹2,000) & iPHONE LUCKY DRAW (₹399) SECTION */}
+        {/* Side-by-Side Tax Exemption & Contribution Clarification with Interactive Calculator */}
+        {/* Welfare Goods Charity Shop (No 80G on items, 100% Profits to Aid) */}
+        <CharityShopSection 
+          products={catalogProducts}
+          onAddToCart={handleAddToCart}
+          onOpenWhatsApp={(product) => {
+            setWhatsAppProduct(product || null);
+            setWhatsAppCustomMsg(undefined);
+            setIsWhatsAppModalOpen(true);
+          }}
+          onOpenDonate={() => {
+            setSelectedCauseForDonate(null);
+            setIsDonateOpen(true);
+          }}
+        />
+
         <DiwaliDhamakaSection 
           onAddToCart={handleAddToCart}
           onOpenWhatsApp={(msg) => {
@@ -266,7 +278,6 @@ export default function App() {
           onOpenRaffleAudit={() => setIsRaffleAuditOpen(true)}
         />
 
-        {/* Side-by-Side Tax Exemption & Contribution Clarification with Interactive Calculator */}
         <TaxExplainerSection 
           onOpenDonate={() => {
             setSelectedCauseForDonate(null);
@@ -274,29 +285,6 @@ export default function App() {
           }}
           onOpenShop={() => handleNavigate('shop-goods')}
           onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
-        />
-
-        {/* Charity Causes (Education & Medical Support in Remote Villages) */}
-        <CausesSection 
-          onSelectCauseForDonation={(cause) => {
-            setSelectedCauseForDonate(cause);
-            setIsDonateOpen(true);
-          }}
-        />
-
-        {/* Welfare Goods Charity Shop (No 80G on items, 100% Profits to Aid) */}
-        <CharityShopSection 
-          products={catalogProducts}
-          onAddToCart={handleAddToCart}
-          onOpenWhatsApp={(product) => {
-            setWhatsAppProduct(product || null);
-            setWhatsAppCustomMsg(undefined);
-            setIsWhatsAppModalOpen(true);
-          }}
-          onOpenDonate={() => {
-            setSelectedCauseForDonate(null);
-            setIsDonateOpen(true);
-          }}
         />
 
         {/* How Pledges Work */}

@@ -1,15 +1,5 @@
 import React from 'react';
-import { 
-  Heart, 
-  ShoppingBag, 
-  ShieldCheck, 
-  Stethoscope, 
-  BookOpen, 
-  MapPin, 
-  ArrowRight,
-  TrendingUp,
-  Sparkles
-} from 'lucide-react';
+import { ArrowDown, ArrowRight, BookOpen, Heart, ShieldCheck, ShoppingBag, Stethoscope } from 'lucide-react';
 
 interface HeroSectionProps {
   onOpenDonate: () => void;
@@ -17,187 +7,82 @@ interface HeroSectionProps {
   onOpenTaxPortal: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({
-  onOpenDonate,
-  onOpenShop,
-  onOpenTaxPortal
-}) => {
-  return (
-    <section id="hero" className="relative isolate overflow-hidden pt-5 pb-12 sm:pt-7 sm:pb-14 lg:pt-10 lg:pb-20 bg-gradient-to-b from-white via-[#f7f9f7] to-[#eef4f0]">
-      {/* Background subtle geometry */}
-      <div className="absolute top-0 right-0 -z-10 w-96 h-96 rounded-full bg-emerald-100/60 blur-3xl pointer-events-none transform translate-x-1/3 -translate-y-1/3" />
-      <div className="absolute bottom-0 left-0 -z-10 w-80 h-80 rounded-full bg-amber-100/60 blur-3xl pointer-events-none transform -translate-x-1/3 translate-y-1/3" />
+export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDonate, onOpenShop, onOpenTaxPortal }) => (
+  <section id="hero" className="relative isolate overflow-hidden bg-[#f2f9f6]">
+    <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-30 [background-image:radial-gradient(rgba(23,83,70,0.16)_0.7px,transparent_0.7px)] [background-size:18px_18px]" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section 8 Governance & Mission Badge */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/85 text-emerald-900 border border-emerald-200 text-[11px] sm:text-xs font-semibold shadow-sm">
-            <span className="relative flex h-2 w-2 rounded-full bg-emerald-500">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
-            </span>
-            <span>Govt. Recognized Section 8 Non-Profit (Reg. U85300KA2021NPL)</span>
-          </div>
-          
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/85 text-amber-900 border border-amber-200 text-[11px] sm:text-xs font-semibold shadow-sm">
-            <ShieldCheck className="w-4 h-4 text-amber-600" />
-            <span>12A & 80G Tax Exemption Certified</span>
-          </div>
+    <div className="mx-auto grid w-full max-w-none items-center gap-8 px-[32px] py-10 sm:py-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-10 lg:py-16 xl:gap-12">
+      <div className="relative z-10 max-w-2xl">
+        <button
+          type="button"
+          onClick={onOpenTaxPortal}
+          className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-900/10 bg-white/65 px-3.5 py-2 text-[11px] font-semibold tracking-wide text-emerald-950 shadow-sm backdrop-blur transition hover:border-emerald-800/25 hover:bg-white sm:text-xs"
+        >
+          <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-800" />
+          <span>Section 8 · 12A · 80G registered</span>
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-emerald-800" />
+        </button>
+
+        <h1 className="mt-6 max-w-[690px] text-[2.75rem] font-medium leading-[0.99] tracking-[-0.045em] text-[#163e37] sm:text-6xl lg:text-[4.35rem] xl:text-[4.8rem]">
+          Healthcare and education, <span className="font-serif italic font-normal text-emerald-800">reached where roads end.</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-base leading-7 text-[#4e6963] sm:text-lg sm:leading-8">
+          We bring mobile clinics and learning support to remote villages, making essential care and opportunity easier to reach.
+        </p>
+
+        <div className="mt-7 flex flex-col gap-3 min-[420px]:flex-row">
+          <button
+            type="button"
+            onClick={onOpenDonate}
+            className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full border border-emerald-900/15 bg-white/65 px-6 py-3 text-sm font-semibold text-[#174c40] shadow-sm backdrop-blur transition hover:border-emerald-800/30 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-800/20"
+          >
+            <Heart className="h-4 w-4 fill-amber-300 text-amber-300" />
+            Give directly
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onOpenShop}
+            className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full border border-emerald-900/15 bg-white/65 px-6 py-3 text-sm font-semibold text-[#174c40] shadow-sm backdrop-blur transition hover:border-emerald-800/30 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-800/15"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            Explore the shop
+          </button>
         </div>
+        <p className="mt-4 text-xs leading-5 text-[#668078]">Direct donations may qualify for 80G benefits. Shop purchases do not.</p>
 
-        {/* Main Title & Subtitle */}
-        <div className="text-center max-w-5xl mx-auto">
-          <h1 className="text-[2rem] sm:text-5xl lg:text-6xl font-extrabold text-slate-950 tracking-tight leading-[1.08] font-serif text-balance">
-            Enabling <span className="text-emerald-800">Quality Education</span> & <br className="hidden sm:block" /><span className="text-amber-600">Vital Healthcare</span> for Remote Villages
-          </h1>
-          
-          <p className="mt-4 sm:mt-5 text-[15px] sm:text-lg text-slate-600 leading-7 font-normal max-w-3xl mx-auto text-pretty">
-            We work in remote hamlets where hospitals and well-equipped schools are out of reach. Weekly mobile clinics, free medicines, rural girls’ education, and classroom STEM kits bring practical support closer to families.
-          </p>
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-emerald-950/10 pt-5 text-xs font-medium text-[#49675f] sm:text-sm">
+          <span className="inline-flex items-center gap-2"><Stethoscope className="h-4 w-4 text-emerald-800" />Remote-village healthcare</span>
+          <span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 text-emerald-800" />Girls’ education</span>
         </div>
-
-        {/* Primary Action Dual CTAs with Clear Legal Distinctions */}
-        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-3xl mx-auto">
-          
-          {/* Action 1: Direct Donation (80G Tax Exemption) */}
-          <div className="flex-1 bg-white/95 p-4 sm:p-5 rounded-2xl border border-emerald-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-2">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                80G Tax Exemption
-              </span>
-              <span className="text-xs text-slate-500 font-medium">Save 50% on Tax</span>
-            </div>
-            <button
-              onClick={onOpenDonate}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#0e4429] hover:bg-[#072a19] text-white font-bold text-sm sm:text-base transition cursor-pointer shadow"
-            >
-              <Heart className="w-5 h-5 fill-amber-400 text-amber-400" />
-              <span>Donate Directly</span>
-              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <p className="mt-2 text-center text-[11px] text-slate-500 leading-snug">
-              Instant digital 80G certificate with PAN & Form 10BE filing reference.
-            </p>
-          </div>
-
-          {/* Action 2: Shop Welfare Goods (100% Profits to Aid, No Tax Exemption) */}
-          <div className="flex-1 bg-white/95 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-2">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
-                <ShoppingBag className="w-3.5 h-3.5 text-amber-700" />
-                100% Profits Fund Aid
-              </span>
-              <span className="text-[11px] text-rose-600 font-semibold">No 80G on items</span>
-            </div>
-            <button
-              onClick={onOpenShop}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm sm:text-base transition cursor-pointer shadow-xs"
-            >
-              <ShoppingBag className="w-5 h-5 text-slate-950" />
-              <span>Shop Welfare Goods</span>
-              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <p className="mt-2 text-center text-[11px] text-slate-500 leading-snug">
-              Purchase artisan crafts & health kits. Net proceeds directly fund village aid.
-            </p>
-          </div>
-
-        </div>
-
-        {/* Real Impact Metrics Counter Strip */}
-        <div className="mt-9 sm:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 max-w-5xl mx-auto">
-          
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">48+</div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">Remote Villages</div>
-              </div>
-            </div>
-            <p className="mt-2 text-[11px] text-slate-500 leading-tight">Weekly mobile clinics & educational aid reaching unmapped forest hamlets.</p>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                <Stethoscope className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">35,400+</div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">Free Medical Visits</div>
-              </div>
-            </div>
-            <p className="mt-2 text-[11px] text-slate-500 leading-tight">Doctor consultations, chronic diabetes care, and free doorstep medicines.</p>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">18,500+</div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">Students Enrolled</div>
-              </div>
-            </div>
-            <p className="mt-2 text-[11px] text-slate-500 leading-tight">School supplies, STEM kits, girl-child bicycle commutes & solar study lights.</p>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">100%</div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">Audited Integrity</div>
-              </div>
-            </div>
-            <p className="mt-2 text-[11px] text-slate-500 leading-tight">Strict Section 8 transparent books, zero private dividend leakage.</p>
-          </div>
-
-        </div>
-
-        {/* Dedicated Vision & Mission Core Statements */}
-        <div id="vision-mission" className="mt-12 sm:mt-16 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Vision */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-emerald-200 shadow-sm relative overflow-hidden group hover:border-emerald-400 transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-800 text-amber-300 flex items-center justify-center shadow-xs">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Our Guiding Light</span>
-                <h3 className="text-xl font-bold font-serif text-slate-900">Our Vision</h3>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              An India where geographical remoteness is never a barrier to quality school education or lifesaving medical care. We envision empowered rural hamlets where every child finishes high school equipped with modern knowledge, and every elder receives dignified, free doorstep healthcare.
-            </p>
-          </div>
-
-          {/* Mission */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-amber-200 shadow-sm relative overflow-hidden group hover:border-amber-400 transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Our Ground Commitment</span>
-                <h3 className="text-xl font-bold font-serif text-slate-900">Our Mission</h3>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              To operate continuous weekly mobile doctor clinics across remote village clusters, eradicate classroom supply shortages, sponsor girl-child bicycle commutes, and create a sustainable zero-leakage welfare bridge where 100% of philanthropic contributions and welfare shop margins directly fund grassroots impact.
-            </p>
-          </div>
-        </div>
-
       </div>
-    </section>
-  );
-};
+
+      <div className="relative mx-auto w-full max-w-[560px] lg:ml-auto">
+        <div aria-hidden="true" className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-white/80 via-emerald-100/50 to-amber-100/65 blur-2xl" />
+        <div className="relative rounded-[2rem] border border-white/80 bg-white/45 p-2.5 shadow-[0_28px_70px_rgba(29,74,66,0.18)] backdrop-blur-md sm:rounded-[2.4rem] sm:p-3">
+          <div className="relative aspect-[1.08/1] overflow-hidden rounded-[1.55rem] bg-[#dfece5] sm:aspect-[1.04/1] sm:rounded-[1.95rem]">
+            <img
+              src="/village-care.jpg"
+              alt="A mobile doctor checking a child in a remote village"
+              className="h-full w-full object-cover object-[47%_center]"
+              fetchPriority="high"
+            />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#102f29]/55 via-transparent to-[#102f29]/5" />
+            <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/75 px-3 py-2 text-[11px] font-semibold text-[#174c40] shadow-md backdrop-blur-lg sm:left-5 sm:top-5 sm:text-xs">
+              <span className="h-2 w-2 rounded-full bg-emerald-600" />Care beyond the last mile
+            </div>
+            <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 sm:inset-x-5 sm:bottom-5">
+              <div className="rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur-xl sm:px-5 sm:py-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800">Two core causes</p>
+                <p className="mt-1 font-serif text-lg leading-tight text-[#173d36] sm:text-xl">Care. Learning. Opportunity.</p>
+              </div>
+              <div className="hidden rounded-full border border-white/40 bg-[#174c40]/90 p-3 text-white shadow-lg backdrop-blur sm:flex">
+                <ArrowDown className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);

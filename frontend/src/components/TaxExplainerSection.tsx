@@ -32,29 +32,29 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
   const effectiveCost = calcAmount - taxSaved;
 
   return (
-    <section id="tax-rules" className="py-16 sm:py-20 bg-slate-50 border-y border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="tax-rules" className="scroll-mt-20 border-y border-emerald-950/5 bg-[#f2f9f6] py-16 sm:py-20">
+      <div className="mx-auto w-full max-w-none px-[32px]">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-12">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/65 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
             <ShieldCheck className="w-4 h-4 text-emerald-700" />
             Transparent Tax Guidance
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
+          <h2 className="text-4xl font-medium leading-tight tracking-tight text-[#173f38] sm:text-5xl">
             Understanding Donations vs. Welfare Goods
           </h2>
-          <p className="mt-3 text-base sm:text-lg text-slate-600">
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#58736c] sm:text-base">
             In compliance with the Indian Income Tax Act (1961) and Section 8 non-profit regulations, 
             here is how tax exemptions and charity funding work for our education and medical missions.
           </p>
         </div>
 
         {/* Side-by-Side Clarity Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-5 md:grid-cols-2">
           
           {/* Direct Donations Card */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-600 shadow-md relative overflow-hidden flex flex-col justify-between">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-[1.8rem] border border-white/80 bg-white/60 p-6 shadow-[0_18px_48px_-32px_rgba(23,63,56,0.34)] backdrop-blur-xl sm:p-8">
             <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-bl-xl flex items-center gap-1">
               <CheckCircle className="w-3.5 h-3.5" />
               Eligible for 80G Tax Exemption
@@ -115,7 +115,7 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
           </div>
 
           {/* Shop Goods Card */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-300 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-[1.8rem] border border-white/80 bg-white/60 p-6 shadow-[0_18px_48px_-32px_rgba(23,63,56,0.34)] backdrop-blur-xl sm:p-8">
             <div className="absolute top-0 right-0 bg-amber-500 text-slate-950 text-[11px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-bl-xl flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" />
               No 80G Exemption on Goods

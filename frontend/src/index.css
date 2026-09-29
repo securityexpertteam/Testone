@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    min-width: 320px;
+    background-color: #f2f9f6;
+    font-family: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'ss01' on;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-serif {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+  }
+}
