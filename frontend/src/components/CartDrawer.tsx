@@ -83,7 +83,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
           
           {/* Header */}
-          <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="px-3 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5" />
@@ -107,7 +107,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
 
           {/* Mandatory Tax Alert Box in Cart */}
-          <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+          <div className="bg-amber-50 px-3 py-2.5 border-b border-amber-200 text-xs text-amber-900 flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
             <div className="leading-snug">
               <strong className="font-semibold">Notice:</strong> Product purchases are <strong>NOT eligible for 80G tax exemptions</strong>. 100% of profit margins (₹{totalProfit}) directly fund village clinics & schools.
@@ -115,7 +115,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
 
           {/* Main Body */}
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto p-3">
             {checkoutStep === 'cart' && (
               <>
                 {cartItems.length === 0 ? (
@@ -174,7 +174,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     ))}
 
                     {/* Optional iPhone Lucky Draw Ticket Add-on */}
-                    <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 border border-amber-400/50">
+                    <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-300">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-2.5">
                           <span className="text-xl">📱</span>
@@ -350,7 +350,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </p>
 
                 {iphoneTicketsCount > 0 && (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border-2 border-amber-400 text-left">
+                  <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-black uppercase text-amber-950 flex items-center gap-1">
                         <span>{raffleItemName} Raffle Entries</span>
@@ -389,7 +389,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Cart Bottom Summary & CTAs */}
           {(cartItems.length > 0 || iphoneTicketsCount > 0) && checkoutStep === 'cart' && (
-            <div className="p-5 border-t border-slate-200 bg-slate-50 space-y-3">
+            <div className="px-3 py-4 border-t border-slate-200 bg-slate-50 space-y-3">
               {/* Financial & Social Impact Summary */}
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between text-slate-600">
@@ -425,7 +425,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="space-y-2 pt-1">
                 <button
                   onClick={onProceedToBooking}
-                  className="w-full py-3.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm shadow cursor-pointer transition flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm shadow cursor-pointer transition flex items-center justify-center gap-2"
                 >
                   <Lock className="w-4 h-4" />
                   <span>Proceed to Delivery & Payment</span>
