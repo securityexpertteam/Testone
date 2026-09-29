@@ -229,7 +229,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             Add a Direct Tax-Exempt Donation?
                           </h5>
                           <p className="text-[11px] text-emerald-800/80 mt-0.5 leading-snug">
-                            This direct amount is <strong>100% eligible for Section 80G tax deduction</strong> and will be added to your receipt.
+                            This direct amount is <strong>eligible for Section 80G tax deduction</strong> and will be added to your receipt.
                           </p>
 
                           <div className="flex gap-2 mt-2.5">

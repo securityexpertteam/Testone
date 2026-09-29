@@ -260,7 +260,7 @@ export const TaxReceiptModal: React.FC<TaxReceiptModalProps> = ({
                     </span>
                   </div>
                   <span className="block text-xs font-bold text-slate-900">Authorized Signatory</span>
-                  <span className="block text-[10px] text-slate-500">Akshaya Patra Welfare Foundation</span>
+                  <span className="block text-[10px] text-slate-500">{organization.legalName || 'Organization Name'}</span>
                 </div>
 
               </div>

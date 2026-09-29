@@ -61,3 +61,39 @@ services:
           type: web
           name: akshaya-patra-backend
           property: host
+      - key: VITE_ORG_LEGAL_NAME
+        sync: false
+      - key: VITE_ORG_CIN
+        sync: false
+      - key: VITE_ORG_SECTION8_REGISTRATION
+        sync: false
+      - key: VITE_ORG_12A_URN
+        sync: false
+      - key: VITE_ORG_80G_URN
+        sync: false
+      - key: VITE_ORG_DARPAN_ID
+        sync: false
+      - key: VITE_ORG_CSR1_REG_NO
+        sync: false
+      - key: VITE_ORG_GSTIN
+        sync: false
+      - key: VITE_ORG_80G_DEDUCTION_PERCENT
+        sync: false
+      - key: VITE_ORG_AUTHORIZED_SIGNATORY
+        sync: false
+      - key: VITE_ORG_BANK_ACCOUNT_NAME
+        sync: false
+      - key: VITE_ORG_BANK_NAME
+        sync: false
+      - key: VITE_ORG_BANK_ACCOUNT_NUMBER
+        sync: false
+      - key: VITE_ORG_BANK_IFSC
+        sync: false
+      - key: VITE_ORG_BANK_BRANCH
+        sync: false
+      - key: VITE_ORG_ESCROW_ACCOUNT_LABEL
+        sync: false
+      - key: VITE_ORG_AUDIT_DESCRIPTION
+        sync: false
+      - key: VITE_ORG_80G_ORDER_NUMBER
+        sync: false

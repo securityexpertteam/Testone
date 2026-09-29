@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { organization } from '../config/organization';
 import { 
   ShieldCheck, 
   AlertTriangle, 
@@ -26,8 +27,8 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
   const [calcAmount, setCalcAmount] = useState<number>(3000);
   const [taxBracket, setTaxBracket] = useState<number>(30); // 30% tax bracket
 
-  // Section 80G allows 50% deduction of the donated amount from taxable income
-  const deductionAmount = Math.round(calcAmount * 0.5);
+  const deductionPercent = Number(organization.deductionPercent) || 50;
+  const deductionAmount = Math.round(calcAmount * deductionPercent / 100);
   const taxSaved = Math.round(deductionAmount * (taxBracket / 100));
   const effectiveCost = calcAmount - taxSaved;
 
@@ -76,7 +77,7 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
                 <div className="flex items-start gap-2.5">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                   <span className="text-sm text-slate-700">
-                    <strong className="text-slate-900">50% Deduction:</strong> Eligible under Section 80G of the Income Tax Act.
+                    <strong className="text-slate-900">{deductionPercent}% Deduction:</strong> Eligible under Section 80G of the Income Tax Act.
                   </span>
                 </div>
 
@@ -256,7 +257,7 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
               </div>
 
               <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-800 text-xs text-emerald-200/90 leading-relaxed">
-                💡 <strong>How it works:</strong> Under Section 80G, 50% of your donation (₹{deductionAmount.toLocaleString('en-IN')}) is deducted from your taxable gross income, resulting in an immediate tax saving of ₹{taxSaved.toLocaleString('en-IN')}.
+                💡 <strong>How it works:</strong> Under Section 80G, {deductionPercent}% of your donation (₹{deductionAmount.toLocaleString('en-IN')}) is deducted from your taxable gross income, resulting in an immediate tax saving of ₹{taxSaved.toLocaleString('en-IN')}.
               </div>
             </div>
 
@@ -264,7 +265,7 @@ export const TaxExplainerSection: React.FC<TaxExplainerSectionProps> = ({
             <div className="lg:col-span-5 bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-emerald-500/30 flex flex-col justify-between">
               <div className="space-y-3.5">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-emerald-200">50% Deduction u/s 80G:</span>
+                  <span className="text-emerald-200">{deductionPercent}% Deduction u/s 80G:</span>
                   <span className="font-bold text-white font-mono">₹{deductionAmount.toLocaleString('en-IN')}</span>
                 </div>
 

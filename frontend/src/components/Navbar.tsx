@@ -41,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick('hero')} 
             className="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink group select-none min-w-0"
           >
-            <img src="/logo-mark.png" alt="" className="h-[54px] w-[64px] shrink-0 rounded-xl object-contain sm:h-[60px] sm:w-[70px]" />
+            <img src="/logo-mark.png" alt="" className="h-[58px] w-[54px] shrink-0 rounded-xl object-contain sm:h-[64px] sm:w-[60px]" />
 
             <div className="flex flex-col min-w-0 truncate">
               <div className="flex flex-col gap-1">

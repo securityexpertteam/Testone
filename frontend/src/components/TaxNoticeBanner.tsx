@@ -21,7 +21,7 @@ export const TaxNoticeBanner: React.FC<TaxNoticeBannerProps> = ({
           <p className="text-amber-100/90 leading-tight">
             <strong className="text-white font-medium">Shop Goods:</strong> No 80G tax exemption on item purchases (100% net profit directly funds village clinics & schools).
             <span className="mx-1.5 opacity-60">|</span>
-            <strong className="text-emerald-300 font-medium">Direct Donations:</strong> 100% eligible for Section 80G Tax Exemption Certificate.
+            <strong className="text-emerald-300 font-medium">Direct Donations:</strong> may qualify for a Section 80G tax exemption certificate, subject to applicable rules.
           </p>
         </div>
 

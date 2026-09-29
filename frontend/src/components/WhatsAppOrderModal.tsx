@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WelfareProduct } from '../types';
 import { HYDERABAD_COMMUNITIES, HYDERABAD_NODAL_POINTS } from '../data/hyderabadLocations';
+import { displayValue, organization } from '../config/organization';
 import { 
   X, 
   MessageCircle, 
@@ -137,7 +138,7 @@ ${includeLuckyDraw && currentProduct?.raffle?.enabled ? `• Raffle request: ${l
 *PAYMENT METHOD:* ${paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash / UPI on Delivery (Doorstep)' : 'Instant UPI Transfer'}
 
 *100% NON-PROFIT WELFARE PLEDGE:*
-₹${profitDonationAmount} from this order sponsors ~${estimatedMealsSupported} hot midday meals for rural children (CSIR & Sec 8 Non-Profit Reg. U85300KA2021NPL).
+₹${profitDonationAmount} from this order sponsors ~${estimatedMealsSupported} hot midday meals for rural children (Section 8 Non-Profit Reg. ${organization.section8Registration}).
 
 Please confirm order dispatch and delivery ETA. Thank you!`;
     }
@@ -168,7 +169,7 @@ Please share official Section 8 proposal and 80G tax exemption certificates.`;
 • Intended Donation Amount: ₹${donationAmount.toLocaleString('en-IN')}
 • Selected Cause: ${donationCause}
 
-Kindly share official Section 8 Trust Bank Details (State Bank of India / HDFC) & UPI ID so I can complete the transfer and receive my instant 80G Tax Exemption Receipt.`;
+Kindly share official Section 8 Trust Bank Details (${organization.bankName || "the organization"}) & UPI ID so I can complete the transfer and receive my instant 80G Tax Exemption Receipt.`;
   };
 
   const previewMessage = buildWhatsAppMessage();
@@ -700,9 +701,9 @@ Kindly share official Section 8 Trust Bank Details (State Bank of India / HDFC) 
                       <span>Official Trust Bank Account:</span>
                     </p>
                     <p className="font-mono text-[11px] text-emerald-900">
-                      • A/C Name: Akshaya Patra Welfare Foundation<br/>
-                      • Bank: State Bank of India (SBI) • A/C No: 40982103847<br/>
-                      • IFSC: SBIN0001248 • Section 8 Reg: U85300KA2021NPL
+                      • A/C Name: {displayValue(organization.bankAccountName)}<br/>
+                      • Bank: {displayValue(organization.bankName)} - A/C No: {displayValue(organization.bankAccountNumber)}<br/>
+                      • IFSC: {displayValue(organization.bankIfsc)} - Section 8 Reg: {displayValue(organization.section8Registration)}
                     </p>
                   </div>
                 </div>

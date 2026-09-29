@@ -12,6 +12,7 @@ import {
   InventoryLog 
 } from '../data/sellerData';
 import { API_BASE_URL } from '../utils/api';
+import { displayValue, organization } from '../config/organization';
 
 interface SellerPortalModalProps {
   isOpen: boolean;
@@ -414,7 +415,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                 )}
               </div>
               <p className="text-[11px] text-emerald-200">
-                100% Non-Profit Producer Ecosystem • Akshaya Patra Welfare Foundation
+                100% Non-Profit Producer Ecosystem • {organization.legalName || 'Organization Name'}
               </p>
             </div>
           </div>
@@ -580,7 +581,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                   <input
                     type="text"
                     required
-                    placeholder="36AABTG8821K1ZK or TS-SHG-2021-99"
+                    placeholder="Enter GSTIN or village SHG registration number"
                     value={regGstin}
                     onChange={(e) => setRegGstin(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
@@ -1331,7 +1332,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                     <div className="p-4 bg-white rounded-2xl border border-slate-200">
                       <p className="text-xs text-slate-500 font-medium">Completed Payouts to Date</p>
                       <p className="text-xl font-bold text-emerald-700 mt-1">₹{completedPayoutTotal.toLocaleString('en-IN')}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Direct to SBI Rural Account</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Direct to {String(payouts[0]?.bankName || organization.bankName || 'verified bank account')}</p>
                     </div>
 
                     <div className="p-4 bg-white rounded-2xl border border-slate-200">
@@ -1902,7 +1903,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
           <div className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto text-xs">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h4 className="font-bold text-slate-900 font-serif text-sm">Akshaya Patra Welfare Foundation</h4>
+                <h4 className="font-bold text-slate-900 font-serif text-sm">{organization.legalName || 'Organization Name'}</h4>
                 <p className="text-[10px] text-slate-500">Tax Invoice & Delivery Dispatch Note</p>
               </div>
               <button onClick={() => setActiveInvoiceOrder(null)} className="text-slate-400 hover:text-slate-800">
@@ -1916,7 +1917,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                 <span>Date: {activeInvoiceOrder.orderDate}</span>
               </div>
               <p>Seller ID: {String(profile.sellerId || '')} ({String(profile.storeName || 'Seller account')})</p>
-              <p>GSTIN: 36AABTG8821K1ZK • Section 8 Reg: U85300KA2021NPL</p>
+              <p>GSTIN: {displayValue(organization.gstin)} • Section 8 Reg: {displayValue(organization.section8Registration)}</p>
             </div>
 
             <div>

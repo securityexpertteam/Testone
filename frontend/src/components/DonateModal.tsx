@@ -41,7 +41,8 @@ export const DonateModal: React.FC<DonateModalProps> = ({
 
   const currentCause = CHARITY_CAUSES.find((c) => c.id === causeId) || CHARITY_CAUSES[0];
   const finalAmount = customAmount ? Number(customAmount) : amount;
-  const taxDeduction = Math.round(finalAmount * 0.5);
+  const deductionPercent = Number(organization.deductionPercent) || 50;
+  const taxDeduction = Math.round(finalAmount * deductionPercent / 100);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +125,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({
         <div className="bg-emerald-50 px-6 py-3 border-b border-emerald-200 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
             <ShieldCheck className="w-4 h-4 text-emerald-700" />
-            <span>Eligible for 50% Tax Deduction under Section 80G</span>
+            <span>Eligible for {deductionPercent}% Tax Deduction under Section 80G</span>
           </div>
           <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
             URN: {organization.urn80G}
@@ -202,7 +203,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({
                 Section 80G Exemption on this Donation:
               </span>
               <span className="text-[11px] text-amber-800/80">
-                50% of ₹{finalAmount.toLocaleString('en-IN')} is tax-exempt
+                {deductionPercent}% of ₹{finalAmount.toLocaleString('en-IN')} may be deductible under Section 80G
               </span>
             </div>
             <div className="text-right">
