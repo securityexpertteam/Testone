@@ -32,9 +32,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItemClass = 'rounded-full border border-transparent px-3.5 py-2 text-[#376d62] transition-all duration-300 hover:border-white/70 hover:bg-white/35 hover:text-[#063f34] hover:shadow-[0_3px_14px_rgba(20,94,77,0.12)] hover:backdrop-blur-md cursor-pointer';
 
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-[#b9dfe0] via-[#d5eeea] to-[#eef8f5]">
+    <header className="sticky top-0 z-40 bg-[linear-gradient(90deg,#b9dfe0_0%,#d5eeea_10%,#eef8f5_28%,#eef8f5_100%)]">
       <div className="mx-auto w-full max-w-none px-[32px] py-2.5 sm:py-[18px]">
-        <div className="grid min-h-[58px] grid-cols-[auto_auto] items-center justify-between gap-3 rounded-[18px] border border-white/80 bg-white/65 px-0 shadow-[0_8px_30px_rgba(16,73,63,0.08)] backdrop-blur-xl sm:min-h-[76px] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-5">
+        <div className="grid min-h-[58px] grid-cols-[auto_auto] items-center justify-between gap-3 rounded-[18px] border border-white/85 bg-white/80 px-0 shadow-[0_8px_30px_rgba(16,73,63,0.08)] backdrop-blur-xl sm:min-h-[76px] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-5">
           
           {/* Logo & Brand Identity */}
           <div 
