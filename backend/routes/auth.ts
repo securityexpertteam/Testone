@@ -65,8 +65,14 @@ const createSellerToken = (seller: SellerAccount): string => jwt.sign(
   { algorithm: 'HS256', subject: seller.email, issuer: 'akshaya-patra-api', audience: 'akshaya-patra-seller', expiresIn: '12h' }
 );
 
-const isDevelopmentOtpMode = (): boolean =>
-  process.env.NODE_ENV !== 'production' && (process.env.OTP_DELIVERY_MODE || 'development') === 'development';
+const isDevelopmentOtpMode = (): boolean => {
+  const configuredMode = process.env.OTP_DELIVERY_MODE?.trim().toLowerCase();
+  // Allow an explicit development override on a temporary Render test deployment.
+  // Never enable this mode implicitly when NODE_ENV is production.
+  return configuredMode
+    ? configuredMode === 'development'
+    : process.env.NODE_ENV !== 'production';
+};
 
 const sendCustomerOtp = async (email: string, otp: string): Promise<void> => {
   const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;

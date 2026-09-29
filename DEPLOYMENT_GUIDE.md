@@ -39,6 +39,7 @@ Set these on the **`akshaya-patra-backend`** service:
 | `MONGODB_BACKUP_DB` | No | Backup database name. Blueprint default: `akshaya_patra_backup`. |
 | `JWT_SECRET` | Yes for authenticated seller flows | Keep private and use at least 32 characters. |
 | `OTP_HASH_SECRET` | Yes for OTP and pickup-claim flows | Keep private and use a strong random value. |
+| `OTP_DELIVERY_MODE` | Yes to choose delivery behavior | Set to `development` only for temporary testing; the generated OTP is returned to the public frontend. Set to `smtp` when email delivery is ready. If unset, production defaults to SMTP. |
 | `SMTP_HOST` | For email delivery | SMTP server hostname. |
 | `SMTP_PORT` | For email delivery | Blueprint default: `587`. |
 | `SMTP_USER` | For email delivery | SMTP account username. |
@@ -51,6 +52,8 @@ Set these on the **`akshaya-patra-backend`** service:
 The API creates its application collections and indexes when it connects to the primary MongoDB database. If `MONGODB_BACKUP_URI` is configured, it initializes `seller_catalog_backup` and mirrors catalog changes. Configure the backup on a separate deployment, not just a different database name on the primary cluster.
 
 Email delivery requires all of `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`. Without them, OTP email and pickup-availability messages cannot be sent.
+
+**Temporary OTP testing:** On the backend Render service, set `OTP_DELIVERY_MODE` to `development`, then redeploy the backend. With MongoDB and `OTP_HASH_SECRET` configured, the OTP appears in the checkout UI and API response, so anyone who can access the public site can see an OTP they request. Do not leave this enabled on a live service. When testing is complete, configure SMTP, set `OTP_DELIVERY_MODE` to `smtp` (or remove it), and redeploy.
 
 ## Frontend environment variables
 
