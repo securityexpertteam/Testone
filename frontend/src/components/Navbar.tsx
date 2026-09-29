@@ -34,12 +34,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[linear-gradient(90deg,#b9dfe0_0%,#d5eeea_10%,#eef8f5_28%,#eef8f5_100%)]">
       <div className="mx-auto w-full max-w-none px-[32px] py-2.5 sm:py-[18px]">
-        <div className="grid min-h-[58px] grid-cols-[auto_auto] items-center justify-between gap-3 rounded-[18px] border border-white/85 bg-white/80 px-0 shadow-[0_8px_30px_rgba(16,73,63,0.08)] backdrop-blur-xl sm:min-h-[76px] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-5">
+        <div className="-ml-2.5 grid min-h-[58px] grid-cols-[auto_auto] items-center justify-between gap-3 rounded-[18px] border border-white/85 bg-white/80 px-0 shadow-[0_8px_30px_rgba(16,73,63,0.08)] backdrop-blur-xl sm:min-h-[76px] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-5">
           
           {/* Logo & Brand Identity */}
           <div 
             onClick={() => handleNavClick('hero')} 
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink group select-none min-w-0"
+            className="ml-2.5 flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink group select-none min-w-0"
           >
             <img src="/logo-mark.png" alt="" className="h-[58px] w-[54px] shrink-0 rounded-xl object-contain sm:h-[64px] sm:w-[60px]" />
 
