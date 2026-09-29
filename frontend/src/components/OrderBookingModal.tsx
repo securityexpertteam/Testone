@@ -104,6 +104,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
 
   // Checkout State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderSubmitError, setOrderSubmitError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<OrderBooking | null>(null);
   const [createdTickets, setCreatedTickets] = useState<RaffleTransactionRecord[]>([]);
   const [copiedTicket, setCopiedTicket] = useState<string | null>(null);
@@ -245,6 +246,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
     }
     setCaptchaError(false);
 
+    setOrderSubmitError('');
     setIsSubmitting(true);
 
     const now = new Date();
@@ -293,7 +295,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
         paymentMethod,
         paymentProvider: paymentMethod === 'CASH_ON_DELIVERY' ? 'Pay on Delivery (Cash/UPI QR at Doorstep)' : upiProvider,
         transactionId,
-        paymentStatus: paymentMethod === 'CASH_ON_DELIVERY' ? 'PAY_ON_DELIVERY_CONFIRMED' : 'SUCCESS',
+        paymentStatus: paymentMethod === 'CASH_ON_DELIVERY' ? 'PAY_ON_DELIVERY_CONFIRMED' : 'PENDING',
         paymentAmount: grandTotal,
         currency: 'INR',
         paymentTimestamp: orderTimestamp
@@ -328,7 +330,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${customerToken}` },
         body: JSON.stringify(fullOrder)
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || 'Order could not be placed');
       const savedOrder = result.order as OrderBooking;
       const savedTickets = result.generatedTickets as RaffleTransactionRecord[];
@@ -338,7 +340,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
       onOrderSuccess(savedOrder, savedTickets);
     } catch (error) {
       setIsSubmitting(false);
-      setAuthMessage(error instanceof Error ? error.message : 'Order could not be placed');
+      setOrderSubmitError(error instanceof Error ? error.message : 'Order could not be placed. Please try again.');
     }
   };
 
@@ -728,14 +730,17 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                   <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center">4</span>
                   <h3 className="text-sm font-bold text-slate-900 font-serif">Payment Method</h3>
                 </div>
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                  Online payment is not connected yet. UPI, QR, and card orders are recorded as pending; coordinate payment with the seller. Pay on Delivery is payable when delivered.
+                </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                   <label className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between transition ${paymentMethod === 'UPI' ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-slate-900">UPI Instant</span>
+                      <span className="font-bold text-slate-900">UPI Payment</span>
                       <input type="radio" name="paymentMethod" checked={paymentMethod === 'UPI'} onChange={() => setPaymentMethod('UPI')} className="text-emerald-600" />
                     </div>
-                    <span className="text-[11px] text-slate-500">Google Pay, PhonePe, Paytm, BHIM</span>
+                    <span className="text-[11px] text-slate-500">Google Pay, PhonePe, Paytm, BHIM (arrange with seller)</span>
                   </label>
 
                   <label className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between transition ${paymentMethod === 'QR_CODE' ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
@@ -743,7 +748,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                       <span className="font-bold text-slate-900">Scan QR Code</span>
                       <input type="radio" name="paymentMethod" checked={paymentMethod === 'QR_CODE'} onChange={() => setPaymentMethod('QR_CODE')} className="text-emerald-600" />
                     </div>
-                    <span className="text-[11px] text-slate-500">Instant static / dynamic UPI QR</span>
+                    <span className="text-[11px] text-slate-500">Arrange QR payment with the seller</span>
                   </label>
 
                   <label className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between transition ${paymentMethod === 'CARDS_NETBANKING' ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
@@ -751,7 +756,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                       <span className="font-bold text-slate-900">Cards / Netbanking</span>
                       <input type="radio" name="paymentMethod" checked={paymentMethod === 'CARDS_NETBANKING'} onChange={() => setPaymentMethod('CARDS_NETBANKING')} className="text-emerald-600" />
                     </div>
-                    <span className="text-[11px] text-slate-500">RuPay, Visa, Mastercard, NetBanking</span>
+                    <span className="text-[11px] text-slate-500">Payment must be confirmed with the seller</span>
                   </label>
 
                   <label className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between transition ${paymentMethod === 'CASH_ON_DELIVERY' ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
@@ -874,6 +879,16 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
 
               {/* Submit CTA */}
               <div className="pt-2">
+                {orderSubmitError && (
+                  <div className="mb-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm text-rose-800" role="alert" aria-live="assertive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-semibold">We couldn’t record your order.</p>
+                      <p className="mt-0.5 text-xs">{orderSubmitError}</p>
+                      <p className="mt-1 text-xs">Your order is not confirmed. Please retry, or contact us if the issue continues.</p>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting || !customerToken || verifiedEmail !== email.trim().toLowerCase()}
@@ -909,6 +924,11 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                 <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto">
                   Thank you, <strong>{completedOrder.customerDetails.fullName}</strong>. Your express order has been routed to the <strong>{completedOrder.deliveryAddress.nearbyNodalPoint}</strong>.
                 </p>
+                <p className="mt-2 text-xs font-medium text-amber-800">
+                  {completedOrder.payment.paymentStatus === 'PENDING'
+                    ? 'Your order is recorded, but online payment is not processed by this checkout yet. Please confirm payment with the seller before dispatch.'
+                    : 'Payment is due when your order is delivered.'}
+                </p>
               </div>
 
               {/* Order Metadata Box */}
@@ -933,7 +953,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-400 block">Payment Method & Status:</span>
-                  <span className="text-slate-800 font-medium">{completedOrder.payment.paymentMethod} • <span className="text-emerald-700 font-bold">{completedOrder.payment.paymentStatus}</span></span>
+                  <span className="text-slate-800 font-medium">{completedOrder.payment.paymentMethod} • <span className={completedOrder.payment.paymentStatus === 'PENDING' ? 'font-bold text-amber-700' : 'font-bold text-emerald-700'}>{completedOrder.payment.paymentStatus}</span></span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Total Amount:</span>

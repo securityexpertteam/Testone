@@ -5,6 +5,127 @@ let database: Db | undefined;
 let backupClient: MongoClient | undefined;
 let backupDatabase: Db | undefined;
 let backupRetryTimer: NodeJS.Timeout | undefined;
+const BACKUP_EXCLUDED_COLLECTIONS = new Set(['catalog_backup_queue']);
+
+const backupIdKey = (id: unknown): string => {
+  if (id && typeof id === 'object' && 'toHexString' in id && typeof (id as { toHexString?: unknown }).toHexString === 'function') {
+    return `objectId:${(id as { toHexString: () => string }).toHexString()}`;
+  }
+  return `${typeof id}:${JSON.stringify(id)}`;
+};
+
+const mirrorPrimaryDatabaseSnapshot = async () => {
+  if (!database || !backupDatabase) return;
+  const primaryCollections = (await database.listCollections({}, { nameOnly: true }).toArray())
+    .map(({ name }) => name)
+    .filter(name => !name.startsWith('system.') && !BACKUP_EXCLUDED_COLLECTIONS.has(name));
+  const backupCollections = new Set((await backupDatabase.listCollections({}, { nameOnly: true }).toArray()).map(({ name }) => name));
+
+  for (const name of primaryCollections) {
+    if (!backupCollections.has(name)) {
+      await backupDatabase.createCollection(name);
+      backupCollections.add(name);
+    }
+
+    const source = database.collection(name);
+    const target = backupDatabase.collection(name);
+    const sourceIds = new Set<string>();
+    let operations: any[] = [];
+    for await (const document of source.find({})) {
+      sourceIds.add(backupIdKey(document._id));
+      operations.push({ replaceOne: { filter: { _id: document._id }, replacement: document, upsert: true } });
+      if (operations.length >= 250) {
+        await target.bulkWrite(operations, { ordered: false });
+        operations = [];
+      }
+    }
+    if (operations.length) await target.bulkWrite(operations, { ordered: false });
+
+    let staleOperations: any[] = [];
+    for await (const { _id } of target.find({}, { projection: { _id: 1 } })) {
+      if (!sourceIds.has(backupIdKey(_id))) {
+        staleOperations.push({ deleteOne: { filter: { _id } } });
+        if (staleOperations.length >= 250) {
+          await target.bulkWrite(staleOperations, { ordered: false });
+          staleOperations = [];
+        }
+      }
+    }
+    if (staleOperations.length) await target.bulkWrite(staleOperations, { ordered: false });
+  }
+
+  for (const name of backupCollections) {
+    if (name !== 'seller_catalog_backup' && !BACKUP_EXCLUDED_COLLECTIONS.has(name) && !primaryCollections.includes(name)) {
+      await backupDatabase.collection(name).drop();
+    }
+  }
+};
+
+const applyDatabaseBackupChange = async (change: any) => {
+  if (!database || !backupDatabase) return;
+  const collectionName = change.ns?.coll as string | undefined;
+  if (!collectionName || collectionName.startsWith('system.') || BACKUP_EXCLUDED_COLLECTIONS.has(collectionName)) return;
+  if (change.operationType === 'drop') {
+    await backupDatabase.collection(collectionName).drop().catch(() => undefined);
+    return;
+  }
+  const id = change.documentKey?._id;
+  if (id === undefined) return;
+  const currentDocument = await database.collection(collectionName).findOne({ _id: id });
+  const backupCollection = backupDatabase.collection(collectionName);
+  if (currentDocument) {
+    await backupCollection.replaceOne({ _id: id }, currentDocument, { upsert: true });
+  } else {
+    await backupCollection.deleteOne({ _id: id });
+  }
+};
+
+const applyDatabaseBackupChangeWithRetry = async (change: any) => {
+  while (database && backupDatabase) {
+    try {
+      await applyDatabaseBackupChange(change);
+      return;
+    } catch (error) {
+      console.error('Database backup change failed; retrying', change.ns?.coll, error);
+      await new Promise(resolve => setTimeout(resolve, 5_000));
+    }
+  }
+};
+
+const runDatabaseBackupChangeStream = async () => {
+  while (database && backupDatabase) {
+    let stream: ReturnType<Db['watch']> | undefined;
+    try {
+      stream = database.watch([
+        { $match: { operationType: { $in: ['insert', 'update', 'replace', 'delete', 'drop'] }, 'ns.coll': { $nin: [...BACKUP_EXCLUDED_COLLECTIONS] } } }
+      ], { fullDocument: 'updateLookup' });
+      let snapshotInProgress = true;
+      const pendingChanges: any[] = [];
+      let streamError: unknown;
+      const consumeChanges = (async () => {
+        try {
+          for await (const change of stream!) {
+            if (snapshotInProgress) pendingChanges.push(change);
+            else await applyDatabaseBackupChangeWithRetry(change);
+          }
+        } catch (error) {
+          streamError = error;
+        }
+      })();
+
+      await mirrorPrimaryDatabaseSnapshot();
+      while (pendingChanges.length) await applyDatabaseBackupChangeWithRetry(pendingChanges.shift());
+      snapshotInProgress = false;
+      console.info('[Mongo Backup] All database collections are synchronized; change stream is active.');
+      await consumeChanges;
+      throw streamError || new Error('MongoDB change stream ended unexpectedly');
+    } catch (error) {
+      console.error('[Mongo Backup] Change stream stopped; reconciling and retrying.', error);
+      await stream?.close().catch(() => undefined);
+      await new Promise(resolve => setTimeout(resolve, 15_000));
+    }
+  }
+};
 
 type CatalogBackupOperation = 'UPSERT' | 'DELETE';
 const writeCatalogBackupSnapshot = async (snapshot: Record<string, any>) => {
@@ -96,6 +217,7 @@ const initializeCatalogBackup = async (primaryUri: string) => {
   await retryCatalogBackupQueue();
   backupRetryTimer = setInterval(() => { void retryCatalogBackupQueue(); }, 30_000);
   backupRetryTimer.unref();
+  void runDatabaseBackupChangeStream();
 };
 
 export const connectMongo = async (): Promise<Db> => {

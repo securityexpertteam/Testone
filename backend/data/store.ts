@@ -45,7 +45,7 @@ export interface PaymentDetails {
   paymentMethod: 'UPI' | 'QR_CODE' | 'CARDS_NETBANKING' | 'CASH_ON_DELIVERY';
   paymentProvider: string;
   transactionId: string;
-  paymentStatus: 'PAID' | 'PAY_ON_DELIVERY_CONFIRMED' | 'SUCCESS';
+  paymentStatus: 'PAID' | 'PAY_ON_DELIVERY_CONFIRMED' | 'SUCCESS' | 'PENDING';
   paymentAmount: number;
   currency: string;
   paymentTimestamp: string;

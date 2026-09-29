@@ -11,7 +11,7 @@ Have these ready:
 
 1. A Git repository containing this project, connected to Render.
 2. A MongoDB deployment and database user with read/write access.
-3. A second, independent MongoDB deployment for the catalog backup mirror. The backup URI must point to a different MongoDB deployment from the primary URI.
+3. A second, independent MongoDB deployment for the active database mirror. The primary MongoDB deployment must support change streams (MongoDB Atlas replica sets do).
 4. A long random value for each backend secret: `JWT_SECRET` and `OTP_HASH_SECRET`.
 5. SMTP credentials if the site needs to send sign-in codes or pickup notifications.
 6. The organization details to display on the site, such as registration numbers and bank details.
@@ -35,7 +35,7 @@ Set these on the **`akshaya-patra-backend`** service:
 | --- | --- | --- |
 | `MONGODB_URI` | Yes | Connection URI for the primary MongoDB deployment. |
 | `MONGODB_DB` | No | Primary database name. Blueprint default: `akshaya_patra`. |
-| `MONGODB_BACKUP_URI` | Recommended | URI for the independent MongoDB deployment used for catalog snapshots. It must not resolve to the primary deployment. |
+| `MONGODB_BACKUP_URI` | Recommended | URI for the independent MongoDB deployment that mirrors application collections. It must not resolve to the primary deployment. |
 | `MONGODB_BACKUP_DB` | No | Backup database name. Blueprint default: `akshaya_patra_backup`. |
 | `JWT_SECRET` | Yes for authenticated seller flows | Keep private and use at least 32 characters. |
 | `OTP_HASH_SECRET` | Yes for OTP and pickup-claim flows | Keep private and use a strong random value. |
@@ -49,7 +49,9 @@ Set these on the **`akshaya-patra-backend`** service:
 
 `NODE_ENV` is set to `production` by the Blueprint. Render supplies the service port; the app listens on `PORT` (the Blueprint currently sets it to `5000`).
 
-The API creates its application collections and indexes when it connects to the primary MongoDB database. If `MONGODB_BACKUP_URI` is configured, it initializes `seller_catalog_backup` and mirrors catalog changes. Configure the backup on a separate deployment, not just a different database name on the primary cluster.
+The API creates its application collections and indexes when it connects to the primary MongoDB database. If `MONGODB_BACKUP_URI` is configured, the backend reconciles all application collections into same-named collections in the backup database and watches primary database changes to mirror inserts, updates, replacements, and deletes. Catalog products are also written to the dedicated `seller_catalog_backup` collection. Change events are retried, and the worker re-snapshots the primary database when it reconnects. With both deployments available and the change stream healthy, updates normally reach the backup within seconds; a provider outage or a large reconciliation can take longer. Configure the backup on a separate deployment, not just a different database name on the primary cluster.
+
+The mirror includes customer, seller, order, donation, payment, and raffle records, including personal data. Restrict access to the backup deployment and its credentials.
 
 Email delivery requires all of `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`. Without them, OTP email and pickup-availability messages cannot be sent.
 

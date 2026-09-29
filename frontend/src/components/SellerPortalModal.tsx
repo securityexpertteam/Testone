@@ -318,7 +318,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
     const cancelledOrd = orders.filter(o => o.status === 'Cancelled').length;
     const totalRevenue = orders.reduce((acc, o) => acc + o.totalAmount, 0);
     const moneyReceived = orders.filter(order => ['PAID', 'SUCCESS'].includes(order.paymentStatus.toUpperCase()) && !['Cancelled', 'Refunded'].includes(order.status)).reduce((total, order) => total + order.totalAmount, 0);
-    const awaitingPayment = orders.filter(order => order.paymentStatus.toUpperCase() === 'PAY_ON_DELIVERY_CONFIRMED' && !['Cancelled', 'Refunded'].includes(order.status)).reduce((total, order) => total + order.totalAmount, 0);
+    const awaitingPayment = orders.filter(order => ['PAY_ON_DELIVERY_CONFIRMED', 'PENDING'].includes(order.paymentStatus.toUpperCase()) && !['Cancelled', 'Refunded'].includes(order.status)).reduce((total, order) => total + order.totalAmount, 0);
     const totalDonation = orders.reduce((acc, o) => acc + o.donationTotal, 0);
 
     return {
