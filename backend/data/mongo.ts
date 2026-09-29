@@ -187,10 +187,13 @@ export const syncCatalogProductBackup = async (
 
 const initializeCatalogBackup = async (primaryUri: string) => {
   const backupUri = process.env.MONGODB_BACKUP_URI;
-  if (!backupUri) return;
+  if (!backupUri) {
+    console.warn('[Mongo Backup] MONGODB_BACKUP_URI is not configured; database mirroring is disabled.');
+    return;
+  }
   const deploymentAddress = (uri: string) => uri.split('@').pop()?.split('/')[0]?.toLowerCase() || '';
   if (backupUri === primaryUri || deploymentAddress(backupUri) === deploymentAddress(primaryUri)) {
-    console.warn('Catalog backup is disabled: MONGODB_BACKUP_URI points to the primary MongoDB deployment. Configure a separate deployment to enable mirroring.');
+    console.warn('[Mongo Backup] Mirroring is disabled: MONGODB_BACKUP_URI points to the primary MongoDB deployment. Configure a separate deployment.');
     return;
   }
   backupClient = new MongoClient(backupUri);

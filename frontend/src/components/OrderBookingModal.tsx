@@ -254,9 +254,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
     const orderRandom = Math.floor(100000 + Math.random() * 900000);
     const orderId = `APW-HYD-2026-${orderRandom}`;
     const txnRandom = Math.floor(100000000 + Math.random() * 900000000);
-    const transactionId = paymentMethod === 'CASH_ON_DELIVERY' 
-      ? `POD-HYD-2026-${orderRandom}` 
-      : `TXN-UPI-${txnRandom}`;
+    const transactionId = `CHECKOUT-${Date.now()}-${txnRandom}`;
 
     const finalCommunity = selectedCommunity.includes('Other') && customCommunity.trim() 
       ? customCommunity.trim() 
@@ -885,7 +883,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                     <div>
                       <p className="font-semibold">We couldn’t record your order.</p>
                       <p className="mt-0.5 text-xs">{orderSubmitError}</p>
-                      <p className="mt-1 text-xs">Your order is not confirmed. Please retry, or contact us if the issue continues.</p>
+                      <p className="mt-1 text-xs">We couldn’t confirm whether it was saved. If this followed a delay, contact us before retrying to avoid a duplicate order.</p>
                     </div>
                   </div>
                 )}
@@ -938,7 +936,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
                   <span className="font-mono font-bold text-slate-900 text-sm">{completedOrder.orderMetadata.orderId}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">Transaction Reference:</span>
+                  <span className="text-slate-400 block">Checkout Reference:</span>
                   <span className="font-mono font-bold text-slate-900 text-sm">{completedOrder.payment.transactionId}</span>
                 </div>
                 <div>
