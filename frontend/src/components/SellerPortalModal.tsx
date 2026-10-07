@@ -799,82 +799,146 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
         {/* VIEW 1: APPROVED SELLER SIGN IN                         */}
         {/* ======================================================== */}
         {!isLoggedIn ? (
-          <div className="p-6 space-y-5 bg-[#fafaf8] overflow-y-auto">
-            <div className="mx-auto w-full max-w-xl space-y-4">
-              <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white p-4">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">Seller access by review</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                      Submit an application here. Admin approval is required before your account can sign in or access seller data.
+          <div className="flex-1 overflow-y-auto bg-[#f4f6f1] p-4 sm:p-7 lg:p-10">
+            <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+              <aside className="relative isolate flex min-h-[300px] flex-col justify-between overflow-hidden rounded-[2rem] bg-[#083a27] p-7 text-white shadow-2xl shadow-emerald-950/15 sm:p-10 lg:min-h-[560px]">
+                <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full border border-emerald-300/15" />
+                <div className="pointer-events-none absolute -right-10 -top-10 -z-10 h-44 w-44 rounded-full border border-emerald-300/15" />
+                <div className="pointer-events-none absolute -bottom-28 -left-24 -z-10 h-72 w-72 rounded-full bg-emerald-500/10 blur-2xl" />
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100">
+                    <ShieldCheck className="h-3.5 w-3.5 text-amber-300" />
+                    A trusted seller workspace
+                  </div>
+                  <h2 className="mt-8 max-w-xl font-serif text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+                    Good work deserves a wider market.
+                  </h2>
+                  <p className="mt-4 max-w-lg text-sm leading-7 text-emerald-100/80">
+                    A considered workspace for the people and organizations bringing thoughtful, purpose-led products to more homes.
+                  </p>
+                </div>
+                <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { icon: Package, label: 'Product', detail: 'catalogue' },
+                    { icon: Truck, label: 'Order', detail: 'management' },
+                    { icon: Heart, label: 'Purpose-led', detail: 'partnership' }
+                  ].map(item => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3.5 backdrop-blur-sm">
+                        <Icon className="h-4 w-4 text-amber-300" />
+                        <p className="mt-4 text-xs font-semibold text-white">{item.label}</p>
+                        <p className="mt-0.5 text-[10px] text-emerald-100/65">{item.detail}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-8 text-[10px] font-medium tracking-wide text-emerald-100/55">
+                  {organization.legalName || 'Akshaya Patra'} · Producer-first collaboration
+                </p>
+              </aside>
+
+              <section className="flex flex-col justify-center py-2 sm:px-4 lg:px-10">
+                <div className="mx-auto w-full max-w-md">
+                  <div className="mb-6">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">Seller workspace</p>
+                    <h3 className="mt-2 font-serif text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                      {showSellerApplication ? 'Start your application' : 'Welcome back'}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {showSellerApplication
+                        ? 'Share a few details about your organization to begin the review process.'
+                        : 'Sign in to manage your products, orders and seller activity.'}
                     </p>
                   </div>
-                </div>
-              </div>
-              {applicationMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-900">{applicationMessage}</p>}
-              {showSellerApplication ? (
-                <form onSubmit={handleSellerApplication} className="space-y-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Apply to become a seller</h3>
-                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">Your application will be reviewed before seller login is enabled. Use the password you want to keep if approved.</p>
+                  <div className="mb-4 flex items-start gap-3 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm shadow-emerald-950/[0.03]">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Seller access by review</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                        New applications are reviewed by the collaboration team before account access is enabled.
+                      </p>
+                    </div>
                   </div>
-                  <label className="block text-xs font-semibold text-slate-700">Store / organization name *
-                    <input required maxLength={120} value={application.storeName} onChange={event => setApplication(current => ({ ...current, storeName: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  {applicationMessage && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-900">{applicationMessage}</p>}
+              {showSellerApplication ? (
+                <form onSubmit={handleSellerApplication} className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-900/[0.06] sm:p-6">
+                  <div className="mb-1 flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                      <UserPlus className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Seller application</h4>
+                      <p className="mt-0.5 text-[10px] text-slate-500">Your details stay private and are used for review.</p>
+                    </div>
+                  </div>
+                  <label className="block text-[11px] font-semibold text-slate-700">Store / organization name *
+                    <input required maxLength={120} value={application.storeName} onChange={event => setApplication(current => ({ ...current, storeName: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs transition placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700">Representative name *
-                    <input required maxLength={120} value={application.sellerName} onChange={event => setApplication(current => ({ ...current, sellerName: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  <label className="block text-[11px] font-semibold text-slate-700">Representative name *
+                    <input required maxLength={120} value={application.sellerName} onChange={event => setApplication(current => ({ ...current, sellerName: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs transition focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700">Registered email *
-                    <input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  <label className="block text-[11px] font-semibold text-slate-700">Registered email *
+                    <input required type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs transition focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700">Phone number *
-                    <input required type="tel" autoComplete="tel" value={application.phone} onChange={event => setApplication(current => ({ ...current, phone: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  <label className="block text-[11px] font-semibold text-slate-700">Phone number *
+                    <input required type="tel" autoComplete="tel" value={application.phone} onChange={event => setApplication(current => ({ ...current, phone: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs transition focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700">GSTIN / registration ID <span className="font-normal text-slate-400">(optional)</span>
-                    <input maxLength={32} value={application.gstin} onChange={event => setApplication(current => ({ ...current, gstin: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  <label className="block text-[11px] font-semibold text-slate-700">GSTIN / registration ID <span className="font-normal text-slate-400">(optional)</span>
+                    <input maxLength={32} value={application.gstin} onChange={event => setApplication(current => ({ ...current, gstin: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs transition focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <label className="block text-xs font-semibold text-slate-700">Password for approved account * <span className="font-normal text-slate-400">(12–128 characters)</span>
-                    <input required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={application.password} onChange={event => setApplication(current => ({ ...current, password: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs font-mono focus:outline-emerald-600" />
+                  <label className="block text-[11px] font-semibold text-slate-700">Password <span className="font-normal text-slate-400">(12–128 characters)</span>
+                    <input required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={application.password} onChange={event => setApplication(current => ({ ...current, password: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-mono transition focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                   </label>
-                  <button type="submit" disabled={isSubmittingApplication} className="w-full rounded-xl bg-[#0e4429] py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#08301d] disabled:opacity-60">
+                  <button type="submit" disabled={isSubmittingApplication} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0e4429] py-3 text-xs font-bold text-white shadow-lg shadow-emerald-950/15 transition hover:bg-[#08301d] focus:outline-none focus:ring-4 focus:ring-emerald-800/20 disabled:opacity-60">
                     {isSubmittingApplication ? 'Submitting application…' : 'Submit for admin review'}
+                    {!isSubmittingApplication && <ArrowRight className="h-3.5 w-3.5" />}
                   </button>
-                  <button type="button" onClick={() => { setShowSellerApplication(false); setAuthError(''); }} className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-800">Back to seller sign in</button>
+                  <button type="button" onClick={() => { setShowSellerApplication(false); setAuthError(''); }} className="w-full py-1 text-[11px] font-semibold text-slate-500 transition hover:text-emerald-900">Back to seller sign in</button>
                   {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
                 </form>
               ) : (
                 <>
-                  <form onSubmit={handleLogin} className="space-y-3.5 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <form onSubmit={handleLogin} className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-900/[0.06] sm:p-7">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Seller Registered Email *</label>
+                      <label className="mb-2 block text-[11px] font-semibold text-slate-700">Seller registered email <span className="text-emerald-800">*</span></label>
                       <div className="relative">
-                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input type="email" required value={email} onChange={event => setEmail(event.target.value)} className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50" />
+                        <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input type="email" required autoComplete="username" value={email} onChange={event => setEmail(event.target.value)} placeholder="name@organization.org" className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-3 text-xs transition placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Password *</label>
+                      <label className="mb-2 block text-[11px] font-semibold text-slate-700">Password <span className="text-emerald-800">*</span></label>
                       <div className="relative">
-                        <Key className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input type="password" required value={password} onChange={event => setPassword(event.target.value)} className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50 font-mono" />
+                        <Key className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input type="password" required autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Enter your password" className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-3 text-xs font-mono transition placeholder:font-sans placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-800/10" />
                       </div>
                     </div>
-                    <button type="submit" disabled={isAuthenticating} className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0e4429] py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#08301d] disabled:opacity-60">
+                    <button type="submit" disabled={isAuthenticating} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0e4429] py-3.5 text-xs font-bold text-white shadow-lg shadow-emerald-950/15 transition hover:bg-[#08301d] focus:outline-none focus:ring-4 focus:ring-emerald-800/20 disabled:opacity-60">
                       <Lock className="h-3.5 w-3.5 text-emerald-300" />
                       <span>{isAuthenticating ? 'Loading seller data...' : 'Sign In to Seller Dashboard'}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                     {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
                   </form>
-                  <div className="text-center">
-                    <button type="button" onClick={() => { setShowSellerApplication(true); setAuthError(''); setApplicationMessage(''); }} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-50">
-                      <UserPlus className="h-4 w-4" /> Apply for seller access
+                  <div className="mt-5 flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/65 p-4 sm:flex-row">
+                    <div className="text-center sm:text-left">
+                      <p className="text-xs font-semibold text-slate-800">New to the seller network?</p>
+                      <p className="mt-1 text-[10px] text-slate-500">Applications are reviewed by our team.</p>
+                    </div>
+                    <button type="button" onClick={() => { setShowSellerApplication(true); setAuthError(''); setApplicationMessage(''); }} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-emerald-800/15 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-950 transition hover:border-emerald-800/30 hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-800/10">
+                      <UserPlus className="h-4 w-4" /> Apply now
                     </button>
-                    <p className="mt-2 text-[10px] leading-relaxed text-slate-500">Applications are reviewed by an administrator before seller access is enabled.</p>
                   </div>
                 </>
               )}
+                  <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-[10px] text-slate-400">
+                    <Lock className="h-3 w-3" /> Your seller account is protected by secure sign-in.
+                  </p>
+                </div>
+              </section>
             </div>
           </div>
         ) : (
