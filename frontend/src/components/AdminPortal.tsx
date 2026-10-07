@@ -304,9 +304,9 @@ export const AdminPortal: React.FC = () => {
                 <div><label className="text-xs font-bold text-slate-700">Administrator username</label><input required autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></div>
                 <div>
                   <label htmlFor="admin-login-password" className="text-xs font-bold text-slate-700">Password</label>
-                  <div className="relative mt-1.5">
-                    <input id="admin-login-password" required type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-3 pr-20 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
-                    <button type="button" onClick={() => setShowLoginPassword(visible => !visible)} aria-pressed={showLoginPassword} className="absolute inset-y-1 right-1 flex items-center gap-1 rounded-lg px-2 text-xs font-bold text-emerald-900 hover:bg-emerald-50">
+                  <div className="mt-1.5 flex items-stretch gap-2">
+                    <input id="admin-login-password" required type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
+                    <button type="button" onClick={() => setShowLoginPassword(visible => !visible)} aria-label={showLoginPassword ? 'Hide password' : 'Show password'} aria-pressed={showLoginPassword} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-800 bg-white px-3 text-xs font-bold text-emerald-900 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
                       {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       {showLoginPassword ? 'Hide' : 'Show'}
                     </button>
