@@ -18,6 +18,7 @@ interface AdminAccount extends Document {
   resetOtpCreatedAt?: Date;
   loginFailedAttempts?: number;
   loginLockedUntil?: Date;
+  loginLockedAt?: Date;
 }
 
 interface AdminToken {
@@ -68,6 +69,15 @@ const getConfiguredAdmin = () => ({
   mobile: process.env.ADMIN_MOBILE?.replace(/[^\d+]/g, '') || ''
 });
 const validEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const getAdminLoginLockoutMs = (): number => {
+  const configuredMinutes = process.env.ADMIN_LOGIN_LOCKOUT_MINUTES;
+  if (!configuredMinutes) return 15 * 60_000;
+  const minutes = Number(configuredMinutes);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 60) {
+    throw new Error('ADMIN_LOGIN_LOCKOUT_MINUTES must be a whole number between 1 and 60');
+  }
+  return minutes * 60_000;
+};
 const hashResetOtp = (username: string, otp: string): string => {
   const secret = process.env.OTP_HASH_SECRET || '';
   if (secret.length < 32) throw new Error('OTP_HASH_SECRET must be configured with at least 32 characters');
@@ -199,19 +209,32 @@ adminRouter.post('/login', async (req: Request, res: Response) => {
   if (!username || !password) return res.status(400).json({ success: false, message: 'Username and password are required' });
   try {
     const admin = await ensureInitialAdmin();
-    if (admin.loginLockedUntil && admin.loginLockedUntil.getTime() > Date.now()) {
-      return res.status(429).json({ success: false, message: 'Administrator sign-in is temporarily locked; try again later' });
+    let failedAttempts = admin.loginFailedAttempts || 0;
+    if (admin.loginLockedUntil) {
+      const lockoutMs = getAdminLoginLockoutMs();
+      const lockedAt = admin.loginLockedAt?.getTime() ?? admin.loginLockedUntil.getTime() - (15 * 60_000);
+      if (lockedAt + lockoutMs > Date.now()) {
+        return res.status(429).json({ success: false, message: 'Administrator sign-in is temporarily locked; try again later' });
+      }
+      failedAttempts = 0;
+      await admins().updateOne(
+        { _id: admin._id },
+        { $set: { loginFailedAttempts: 0 }, $unset: { loginLockedAt: '', loginLockedUntil: '' } }
+      );
     }
     if (admin.username !== username || !verifyPassword(password, admin.passwordHash)) {
       if (admin.username !== username) {
         return res.status(401).json({ success: false, message: 'Administrator credentials are invalid' });
       }
-      const failedAttempts = (admin.loginFailedAttempts || 0) + 1;
+      failedAttempts += 1;
+      const now = new Date();
       await admins().updateOne(
         { _id: admin._id },
         { $set: {
           loginFailedAttempts: failedAttempts,
-          ...(failedAttempts >= 5 ? { loginLockedUntil: new Date(Date.now() + 15 * 60_000) } : {})
+          ...(failedAttempts >= 5
+            ? { loginLockedAt: now, loginLockedUntil: new Date(now.getTime() + getAdminLoginLockoutMs()) }
+            : {})
         } }
       );
       if (failedAttempts >= 5) return res.status(429).json({ success: false, message: 'Administrator sign-in is temporarily locked; try again later' });
@@ -219,7 +242,7 @@ adminRouter.post('/login', async (req: Request, res: Response) => {
     }
     await admins().updateOne(
       { _id: admin._id },
-      { $set: { loginFailedAttempts: 0 }, $unset: { loginLockedUntil: '' } }
+      { $set: { loginFailedAttempts: 0 }, $unset: { loginLockedAt: '', loginLockedUntil: '' } }
     );
     return res.json({
       success: true,
@@ -379,7 +402,8 @@ adminRouter.post('/recovery/complete', async (req: Request, res: Response) => {
           resetOtpExpiresAt: '',
           resetOtpAttempts: '',
           loginFailedAttempts: '',
-          loginLockedUntil: ''
+          loginLockedUntil: '',
+          loginLockedAt: ''
         }
       }
     );

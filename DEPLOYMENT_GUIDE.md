@@ -42,6 +42,7 @@ Set these on the **`akshaya-patra-backend`** service:
 | `SELLER_ADMIN_KEY` | Yes for seller account administration | A separate random secret of at least 32 characters. Keep it only in the backend environment and trusted admin tooling. Never put it in either frontend environment. |
 | `ADMIN_USERNAME` | Yes for admin console | Initial admin login name, stored/configured only on the backend. |
 | `ADMIN_INITIAL_PASSWORD` | Yes for first admin login | Bootstrap password of at least 12 characters; first sign-in forces a change to a 14+ character password. It is not used to overwrite an already initialized admin account. |
+| `ADMIN_LOGIN_LOCKOUT_MINUTES` | No | Lockout duration after five failed admin password attempts. Whole number from `1` to `60`; Blueprint default is `15`. Changing it also adjusts the remaining duration for an existing lockout. |
 | `ADMIN_EMAIL` | Yes for admin recovery | Registered email used to validate recovery and receive production OTP. |
 | `ADMIN_MOBILE` | Yes for admin recovery | Registered mobile number in international format, e.g. `+91...`; used for recovery validation and SMS OTP delivery. |
 | `ADMIN_RESET_CODE` | Yes for admin recovery | Independent random secret of at least 32 characters. Keep only in backend environment; it is required in addition to the OTP. |
