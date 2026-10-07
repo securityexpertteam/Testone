@@ -1,8 +1,9 @@
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownToLine, BadgeCheck, Building2, CircleDollarSign, ClipboardList,
-  Eye, EyeOff, LayoutDashboard, LockKeyhole, LogOut, Mail, RefreshCw, ShieldCheck, ShoppingBag,
-  Store, TriangleAlert, Users, Wallet
+  Eye, EyeOff, LayoutDashboard, LockKeyhole, LogOut, Mail, Maximize2, MessageCircle,
+  Minimize2, Minus, RefreshCw, Send, ShieldCheck, ShoppingBag, Store, TriangleAlert, Users,
+  Wallet, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../utils/api';
 
@@ -37,6 +38,11 @@ interface DashboardData {
   operations: { lowStockProducts: DataRow[]; lowStockCount: number; openSellerTickets: number };
   donorContributors: Array<{ _id: { email: string; name: string }; contributionCount: number; totalContribution: number; lastContributionAt: string | Date }>;
   auditEvents: DataRow[];
+}
+
+interface PortfolioChatMessage {
+  role: 'assistant' | 'user';
+  text: string;
 }
 
 const sections: Array<{ id: DashboardSection; label: string; icon: React.ElementType }> = [
@@ -75,6 +81,48 @@ const dateValue = (value: unknown) => {
   if (typeof value !== 'string' && !(value instanceof Date)) return '—';
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+const summarizePortfolioQuestion = (dashboard: DashboardData, question: string): string => {
+  const query = question.toLowerCase();
+  if (/\b(donor|donors|contributor|contributors|sponsor|sponsors)\b/.test(query)) {
+    const repeatContributors = dashboard.donorContributors.length;
+    return `There are ${repeatContributors} contributor group${repeatContributors === 1 ? '' : 's'} in the saved paid, order-linked donation records, totaling ${formatCurrency(dashboard.metrics.donations.revenue)}. This is not a standalone sponsor directory.`;
+  }
+  if (/\b(donation|donations|cause|causes|welfare|contribution|contributions)\b/.test(query)) {
+    if (!dashboard.donationCauses.length) {
+      return `The saved donation ledger currently reports ${dashboard.metrics.donations.donations} paid contributions totaling ${formatCurrency(dashboard.metrics.donations.revenue)}. No cause breakdown is available yet. These figures cover order-linked contributions only.`;
+    }
+    const causes = [...dashboard.donationCauses].sort((a, b) => Number(b.revenue) - Number(a.revenue));
+    return `Paid, order-linked contributions: ${dashboard.metrics.donations.donations} records totaling ${formatCurrency(dashboard.metrics.donations.revenue)}.\n\nBy cause:\n${causes.map((cause, index) => `${index + 1}. ${cause._id}: ${formatCurrency(cause.revenue)} across ${cause.contributions} records`).join('\n')}\n\nDirect donation form submissions and sponsor records are not included in this backend ledger.`;
+  }
+  if (/\b(seller|sellers|vendor|vendors|application|applications|approval|approvals|pending)\b/.test(query)) {
+    return `Seller accounts: ${dashboard.metrics.vendors.total} total, ${dashboard.metrics.vendors.approved} approved, ${dashboard.metrics.vendors.pending} pending review, and ${dashboard.metrics.vendors.suspended} suspended. Only explicitly approved sellers can access the seller portal.`;
+  }
+  if (/\b(product|products|catalog|catalogue|stock|inventory)\b/.test(query)) {
+    return `The catalog contains ${dashboard.metrics.products.total} products, of which ${dashboard.metrics.products.active} are active. ${dashboard.operations.lowStockCount} products are at or below the low-stock threshold.`;
+  }
+  if (/\b(referral|referrals|refid|source)\b/.test(query) ||
+      dashboard.referralChannels.some(channel => query.includes(channel._id.toLowerCase()))) {
+    if (!dashboard.referralChannels.length) return 'No paid referral-attributed order records are available in the current portfolio data.';
+    return `Paid order revenue by saved referral ID:\n${[...dashboard.referralChannels].sort((a, b) => Number(b.revenue) - Number(a.revenue)).map(channel => `• ${channel._id}: ${formatCurrency(channel.revenue)} across ${channel.orders} orders`).join('\n')}`;
+  }
+  if (/\b(channel|channels)\b/.test(query)) {
+    const paymentSummary = dashboard.orderChannels.length
+      ? dashboard.orderChannels.map(channel => `• Payment method ${channel._id}: ${formatCurrency(channel.revenue)} across ${channel.orders} orders`).join('\n')
+      : 'No paid payment-channel records are available.';
+    const referralSummary = dashboard.referralChannels.length
+      ? [...dashboard.referralChannels].map(channel => `• Referral ${channel._id}: ${formatCurrency(channel.revenue)} across ${channel.orders} orders`).join('\n')
+      : 'No paid referral records are available.';
+    return `Saved channel summaries:\n${paymentSummary}\n${referralSummary}`;
+  }
+  if (/\b(order|orders|revenue|sales|inflow|transaction|transactions)\b/.test(query)) {
+    return `The portfolio has ${dashboard.metrics.orders.orders} saved orders. Recognized paid/successful order revenue is ${formatCurrency(dashboard.metrics.orders.revenue)}. Donation contributions are tracked separately at ${formatCurrency(dashboard.metrics.donations.revenue)}.`;
+  }
+  if (/\b(raffle|raffles|campaign|campaigns)\b/.test(query)) {
+    return `There are ${dashboard.metrics.raffleCampaigns} raffle campaigns recorded. The dashboard currently shows ${dashboard.campaigns.length} campaign details.`;
+  }
+  return `Current portfolio snapshot:\n• ${dashboard.metrics.vendors.total} seller accounts (${dashboard.metrics.vendors.pending} pending review)\n• ${dashboard.metrics.orders.orders} saved orders with ${formatCurrency(dashboard.metrics.orders.revenue)} recognized order revenue\n• ${dashboard.metrics.donations.donations} paid, order-linked donations totaling ${formatCurrency(dashboard.metrics.donations.revenue)}\n• ${dashboard.metrics.products.active} active products out of ${dashboard.metrics.products.total}\n\nAsk about donations by cause, orders, sellers, products, referrals, contributors, or raffle campaigns.`;
 };
 
 const downloadCsv = (filename: string, rows: Array<Record<string, unknown>>) => {
@@ -117,6 +165,13 @@ export const AdminPortal: React.FC = () => {
   const [developmentOtp, setDevelopmentOtp] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [recoveryStep, setRecoveryStep] = useState<'request' | 'verify' | 'complete'>('request');
+  const [portfolioChatOpen, setPortfolioChatOpen] = useState(false);
+  const [portfolioChatMinimized, setPortfolioChatMinimized] = useState(false);
+  const [portfolioChatMaximized, setPortfolioChatMaximized] = useState(false);
+  const [portfolioChatDraft, setPortfolioChatDraft] = useState('');
+  const [portfolioChatMessages, setPortfolioChatMessages] = useState<PortfolioChatMessage[]>([
+    { role: 'assistant', text: 'I can summarize the live portfolio records loaded in this dashboard. Ask about donations by cause, orders, sellers, products, referrals, contributors, or campaigns.' }
+  ]);
 
   const request = useCallback(async <T,>(path: string, options: RequestInit = {}, authToken = token): Promise<T> => {
     const headers = new Headers(options.headers);
@@ -147,6 +202,18 @@ export const AdminPortal: React.FC = () => {
   useEffect(() => {
     if (token && !mustChangePassword) void loadDashboard(token);
   }, [token, mustChangePassword, loadDashboard]);
+
+  const submitPortfolioQuestion = (event: FormEvent) => {
+    event.preventDefault();
+    const question = portfolioChatDraft.trim();
+    if (!question || !dashboard) return;
+    setPortfolioChatMessages(messages => [
+      ...messages,
+      { role: 'user', text: question },
+      { role: 'assistant', text: summarizePortfolioQuestion(dashboard, question) }
+    ]);
+    setPortfolioChatDraft('');
+  };
 
   const signIn = async (event: FormEvent) => {
     event.preventDefault();
@@ -306,9 +373,8 @@ export const AdminPortal: React.FC = () => {
                   <label htmlFor="admin-login-password" className="text-xs font-bold text-slate-700">Password</label>
                   <div className="mt-1.5 flex items-stretch gap-2">
                     <input id="admin-login-password" required type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
-                    <button type="button" onClick={() => setShowLoginPassword(visible => !visible)} aria-label={showLoginPassword ? 'Hide password' : 'Show password'} aria-pressed={showLoginPassword} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-800 bg-white px-3 text-xs font-bold text-emerald-900 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+                    <button type="button" onClick={() => setShowLoginPassword(visible => !visible)} aria-label={showLoginPassword ? 'Hide password' : 'Show password'} aria-pressed={showLoginPassword} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-800 bg-white text-emerald-900 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
                       {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      {showLoginPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>
@@ -444,19 +510,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Contribution by cause</p>
-                  {dashboard.donationCauses.length ? (
-                    <div className="space-y-3">
-                      {dashboard.donationCauses.slice(0, 4).map(cause => (
-                        <MetricLine
-                          key={cause._id}
-                          label={`${cause._id} · ${cause.contributions}`}
-                          value={cause.revenue}
-                          max={Math.max(...dashboard.donationCauses.map(item => Number(item.revenue || 0)), 1)}
-                          color="bg-rose-500"
-                        />
-                      ))}
-                    </div>
-                  ) : <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No paid contributions are recorded yet.</p>}
+                  <CauseDistribution causes={dashboard.donationCauses.slice(0, 4)} />
                 </div>
                 <div className="min-w-0">
                   <div className="mb-3 flex items-center justify-between gap-2">
@@ -558,7 +612,7 @@ export const AdminPortal: React.FC = () => {
           {dashboard && section === 'donations' && <div className="space-y-4">
             <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs leading-relaxed text-blue-950"><strong>Record definition:</strong> this ledger currently includes order-linked donation contributions only. Direct donation form records are not submitted to a backend donation API yet, so they are not included here. There is no independent sponsor CRM; this is not a verified sponsor directory.</div>
             <div className="grid gap-4 xl:grid-cols-2"><Panel title="Contribution by cause" subtitle="Amounts calculated from saved donation documents.">
-              <div className="space-y-3">{dashboard.donationCauses.map(item => <MetricLine key={item._id} label={`${item._id} · ${item.contributions} records`} value={item.revenue} max={Math.max(...dashboard.donationCauses.map(cause => Number(cause.revenue || 0)), 1)} color="bg-rose-500" />)}</div>
+              <CauseDistribution causes={dashboard.donationCauses} />
             </Panel><Panel title="Donor contribution register" subtitle={`${dashboard.donations.length} most recent contribution records`}>
               <DataTable headers={['Contributor', 'Source', 'Cause', 'Status', 'Amount']} rows={dashboard.donations} render={(donation, index) => <tr key={stringValue(donation.donationId, String(index))} className="border-b border-slate-100 last:border-0">
                 <td className="py-3"><strong>{stringValue(donation.donorName)}</strong></td><td>{stringValue(donation.source)}</td><td>{stringValue(donation.cause)}</td><td><StatusBadge value={stringValue(donation.paymentStatus)} /></td><td className="text-right font-bold">{formatCurrency(donation.amount)}</td>
@@ -607,7 +661,7 @@ export const AdminPortal: React.FC = () => {
                 <div className="space-y-3">{dashboard.financials.monthlyRevenue.map(month => <MetricLine key={month._id} label={`${month._id} · ${month.orders} orders`} value={month.orders} max={Math.max(...dashboard.financials.monthlyRevenue.map(item => Number(item.orders || 0)), 1)} color="bg-violet-600" />)}</div>
               </Panel>
               <Panel title="Cause contributions" subtitle="Contribution records by saved welfare cause">
-                <div className="space-y-3">{dashboard.donationCauses.map(cause => <MetricLine key={cause._id} label={`${cause._id} · ${cause.contributions} records`} value={cause.revenue} max={Math.max(...dashboard.donationCauses.map(item => Number(item.revenue || 0)), 1)} color="bg-rose-500" />)}</div>
+                <CauseDistribution causes={dashboard.donationCauses} />
               </Panel>
             </div>
           </div>}
@@ -629,6 +683,122 @@ export const AdminPortal: React.FC = () => {
           <footer className="flex flex-wrap items-center justify-between gap-2 py-3 text-[10px] text-slate-400"><span>Restricted admin workspace · MongoDB-backed live records</span><span>Approval notifications use configured SMTP; recovery delivery requires configured SMTP and Twilio SMS.</span></footer>
         </div>
       </main>
+      {dashboard && !portfolioChatOpen && (
+        <button
+          type="button"
+          onClick={() => { setPortfolioChatOpen(true); setPortfolioChatMinimized(false); }}
+          className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-900 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-emerald-950/25 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
+          aria-label="Open portfolio data chat"
+        >
+          <MessageCircle className="h-4 w-4" /> Ask portfolio
+        </button>
+      )}
+      {dashboard && portfolioChatOpen && (
+        <section
+          aria-label="Portfolio data chat"
+          className={`fixed z-50 flex flex-col overflow-hidden border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 transition-all ${
+            portfolioChatMaximized
+              ? 'inset-3 rounded-2xl sm:inset-6'
+              : 'bottom-4 right-4 h-[min(620px,calc(100vh-2rem))] w-[calc(100vw-2rem)] max-w-[410px] rounded-2xl'
+          }`}
+        >
+          <header className="flex shrink-0 items-center justify-between gap-3 bg-[#092f25] px-4 py-3 text-white">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-emerald-50"><MessageCircle className="h-4 w-4" /></span>
+              <div className="min-w-0">
+                <h2 className="truncate text-xs font-black">Portfolio data chat</h2>
+                <p className="mt-0.5 truncate text-[10px] text-emerald-100/75">Answers from current portfolio records</p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPortfolioChatMinimized(value => !value)}
+                aria-label={portfolioChatMinimized ? 'Restore portfolio chat' : 'Minimize portfolio chat'}
+                title={portfolioChatMinimized ? 'Restore' : 'Minimize'}
+                className="rounded-lg p-2 text-emerald-100 transition hover:bg-white/10 hover:text-white"
+              >
+                {portfolioChatMinimized ? <Maximize2 className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+              </button>
+              {!portfolioChatMinimized && (
+                <button
+                  type="button"
+                  onClick={() => setPortfolioChatMaximized(value => !value)}
+                  aria-label={portfolioChatMaximized ? 'Restore portfolio chat size' : 'Maximize portfolio chat'}
+                  title={portfolioChatMaximized ? 'Restore' : 'Maximize'}
+                  className="rounded-lg p-2 text-emerald-100 transition hover:bg-white/10 hover:text-white"
+                >
+                  {portfolioChatMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setPortfolioChatOpen(false); setPortfolioChatMaximized(false); setPortfolioChatMinimized(false); }}
+                aria-label="Close portfolio chat"
+                title="Close"
+                className="rounded-lg p-2 text-emerald-100 transition hover:bg-rose-500/20 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
+          {!portfolioChatMinimized && (
+            <>
+              <div className="flex min-h-0 flex-1 flex-col bg-[#f7f9f7]">
+                <div className="flex-1 space-y-3 overflow-y-auto p-4" role="log" aria-live="polite" aria-relevant="additions">
+                  {portfolioChatMessages.map((message, index) => (
+                    <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <p className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-3.5 py-3 text-xs leading-relaxed ${
+                        message.role === 'user'
+                          ? 'rounded-br-md bg-emerald-900 text-white'
+                          : 'rounded-bl-md border border-slate-200 bg-white text-slate-700 shadow-sm'
+                      }`}>{message.text}</p>
+                    </div>
+                  ))}
+                </div>
+                {portfolioChatMessages.length === 1 && (
+                  <div className="flex flex-wrap gap-2 px-4 pb-3">
+                    {['Donations by cause', 'Pending sellers', 'Referral revenue'].map(prompt => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => setPortfolioChatDraft(prompt)}
+                        className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-emerald-900 transition hover:bg-emerald-50"
+                      >{prompt}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <form onSubmit={submitPortfolioQuestion} className="shrink-0 border-t border-slate-200 bg-white p-3">
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={portfolioChatDraft}
+                    onChange={event => setPortfolioChatDraft(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        event.currentTarget.form?.requestSubmit();
+                      }
+                    }}
+                    rows={2}
+                    maxLength={300}
+                    placeholder="Ask about your portfolio data…"
+                    aria-label="Ask a question about portfolio data"
+                    className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!portfolioChatDraft.trim()}
+                    aria-label="Send question"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-900 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  ><Send className="h-4 w-4" /></button>
+                </div>
+                <p className="mt-2 text-center text-[9px] text-slate-400">Rule-based summaries · uses loaded MongoDB dashboard data only</p>
+              </form>
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 };
@@ -643,6 +813,47 @@ const Panel: React.FC<{ title: string; subtitle: string; children: React.ReactNo
 const MetricLine: React.FC<{ label: string; value: unknown; max: number; color: string }> = ({ label, value, max, color }) => (
   <div><div className="mb-1.5 flex items-center justify-between gap-2 text-xs"><span className="truncate font-semibold text-slate-600">{label}</span><strong>{formatCurrency(value)}</strong></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(Number(value || 0) > 0 ? 2 : 0, Math.min(100, Number(value || 0) / max * 100))}%` }} /></div></div>
 );
+
+const CauseDistribution: React.FC<{ causes: DashboardData['donationCauses'] }> = ({ causes }) => {
+  const total = causes.reduce((sum, cause) => sum + Number(cause.revenue || 0), 0);
+  if (!causes.length) return <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No paid contributions are recorded by cause yet.</p>;
+
+  return (
+    <div className="space-y-4">
+      {causes.map((cause, index) => {
+        const amount = Number(cause.revenue || 0);
+        const share = total > 0 ? amount / total * 100 : 0;
+        return (
+          <div key={cause._id}>
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-slate-800">{cause._id}</p>
+                <p className="mt-0.5 text-[10px] text-slate-500">{Number(cause.contributions || 0).toLocaleString('en-IN')} contribution records</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-black text-slate-900">{formatCurrency(amount)}</p>
+                <p className="mt-0.5 text-[10px] font-semibold text-rose-700">{share.toFixed(1)}%</p>
+              </div>
+            </div>
+            <div
+              className="h-2.5 overflow-hidden rounded-full bg-rose-50"
+              role="img"
+              aria-label={`${cause._id}: ${formatCurrency(amount)}, ${share.toFixed(1)} percent of recorded contributions`}
+            >
+              <div
+                className={`h-full rounded-full ${index === 0 ? 'bg-gradient-to-r from-rose-600 to-rose-400' : 'bg-gradient-to-r from-rose-400 to-pink-300'}`}
+                style={{ width: `${Math.min(100, share)}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+      <p className="border-t border-slate-100 pt-2 text-right text-[10px] font-semibold text-slate-500">
+        Total across shown causes <span className="ml-1 text-slate-800">{formatCurrency(total)}</span>
+      </p>
+    </div>
+  );
+};
 
 const Notice: React.FC<{ icon: React.ElementType; title: string; detail: string; tone: 'amber' | 'slate' | 'blue' | 'rose' }> = ({ icon: Icon, title, detail, tone }) => {
   const tones = { amber: 'bg-amber-50 text-amber-900', slate: 'bg-slate-100 text-slate-800', blue: 'bg-blue-50 text-blue-900', rose: 'bg-rose-50 text-rose-900' };
