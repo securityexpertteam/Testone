@@ -2,12 +2,12 @@ import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownToLine, BadgeCheck, Building2, CircleDollarSign, ClipboardList,
   Eye, EyeOff, LayoutDashboard, LockKeyhole, LogOut, Mail, Maximize2, MessageCircle,
-  Minimize2, Minus, RefreshCw, Send, ShieldCheck, ShoppingBag, Store, TriangleAlert, Users,
-  Wallet, X
+  Minimize2, Minus, RefreshCw, Send, ShieldCheck, ShoppingBag, Store, TriangleAlert,
+  Sparkles, Trophy, Users, Wallet, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../utils/api';
 
-type DashboardSection = 'overview' | 'sellers' | 'orders' | 'finance' | 'donations' | 'channels' | 'vendors' | 'operations' | 'analytics' | 'governance';
+type DashboardSection = 'overview' | 'sellers' | 'orders' | 'finance' | 'donations' | 'channels' | 'vendors' | 'raffles' | 'operations' | 'analytics' | 'governance';
 type DataRow = Record<string, unknown>;
 
 interface DashboardData {
@@ -45,6 +45,19 @@ interface PortfolioChatMessage {
   text: string;
 }
 
+interface RaffleRevealEntry {
+  ticketNumber: string;
+  customerName: string;
+}
+
+interface RaffleRevealState {
+  phase: 'spinning' | 'winner';
+  prizeName: string;
+  entries: RaffleRevealEntry[];
+  winner: RaffleRevealEntry;
+  currentEntry: RaffleRevealEntry;
+}
+
 const sections: Array<{ id: DashboardSection; label: string; icon: React.ElementType }> = [
   { id: 'overview', label: 'Portfolio overview', icon: LayoutDashboard },
   { id: 'sellers', label: 'Seller management', icon: Users },
@@ -53,6 +66,7 @@ const sections: Array<{ id: DashboardSection; label: string; icon: React.Element
   { id: 'donations', label: 'Donors & sponsors', icon: HeartIcon },
   { id: 'channels', label: 'Sales channels', icon: Activity },
   { id: 'vendors', label: 'Vendors & catalog', icon: Store },
+  { id: 'raffles', label: 'Raffle draws', icon: Trophy },
   { id: 'operations', label: 'Operations & stock', icon: ClipboardIcon },
   { id: 'analytics', label: 'Trends & performance', icon: ChartIcon },
   { id: 'governance', label: 'Governance log', icon: ShieldCheck }
@@ -172,6 +186,7 @@ export const AdminPortal: React.FC = () => {
   const [portfolioChatMessages, setPortfolioChatMessages] = useState<PortfolioChatMessage[]>([
     { role: 'assistant', text: 'I can summarize the live portfolio records loaded in this dashboard. Ask about donations by cause, orders, sellers, products, referrals, contributors, or campaigns.' }
   ]);
+  const [raffleReveal, setRaffleReveal] = useState<RaffleRevealState | null>(null);
 
   const request = useCallback(async <T,>(path: string, options: RequestInit = {}, authToken = token): Promise<T> => {
     const headers = new Headers(options.headers);
@@ -202,6 +217,26 @@ export const AdminPortal: React.FC = () => {
   useEffect(() => {
     if (token && !mustChangePassword) void loadDashboard(token);
   }, [token, mustChangePassword, loadDashboard]);
+
+  useEffect(() => {
+    if (raffleReveal?.phase !== 'spinning') return;
+    const entries = raffleReveal.entries;
+    const spinInterval = window.setInterval(() => {
+      const nextEntry = entries[Math.floor(Math.random() * entries.length)];
+      setRaffleReveal(current => current?.phase === 'spinning'
+        ? { ...current, currentEntry: nextEntry }
+        : current);
+    }, 85);
+    const finishTimer = window.setTimeout(() => {
+      setRaffleReveal(current => current?.phase === 'spinning'
+        ? { ...current, phase: 'winner', currentEntry: current.winner }
+        : current);
+    }, 4800);
+    return () => {
+      window.clearInterval(spinInterval);
+      window.clearTimeout(finishTimer);
+    };
+  }, [raffleReveal?.phase]);
 
   const submitPortfolioQuestion = (event: FormEvent) => {
     event.preventDefault();
@@ -309,6 +344,42 @@ export const AdminPortal: React.FC = () => {
       await loadDashboard();
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : 'Seller status could not be updated');
+    } finally { setBusy(false); }
+  };
+
+  const drawRaffleWinner = async (campaignId: string, prizeName: string, eligibleUniqueParticipants: number) => {
+    if (!eligibleUniqueParticipants || busy) return;
+    const confirmed = window.confirm(
+      `Run the one-time draw for ${prizeName}?\n\n${eligibleUniqueParticipants} valid purchased tickets are eligible. Each ticket is one entry, so purchasers with more tickets have proportionally higher odds. This draw cannot be reversed.`
+    );
+    if (!confirmed) return;
+
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const { entries } = await request<{ entries: RaffleRevealEntry[] }>(`/raffle/${encodeURIComponent(campaignId)}/entries`);
+      if (!entries.length) throw new Error('No eligible purchased tickets are available for this campaign');
+      const result = await request<{
+        alreadyDrawn: boolean;
+        draw: { winner?: { customerName?: string; ticketNumber?: string } } | null;
+      }>('/raffle/draw', { method: 'POST', body: JSON.stringify({ campaignId }) });
+      const winner = result.draw?.winner;
+      if (!winner?.ticketNumber || !winner.customerName) throw new Error('The draw was recorded but the winning ticket details were not returned. Refresh the portfolio to verify the result.');
+      if (result.alreadyDrawn) {
+        setNotice(`This campaign was already drawn. Winner: ${winner.customerName} · ${winner.ticketNumber}.`);
+      } else {
+        const winningEntry = { customerName: winner.customerName, ticketNumber: winner.ticketNumber };
+        setRaffleReveal({
+          phase: 'spinning',
+          prizeName,
+          entries,
+          winner: winningEntry,
+          currentEntry: entries[0]
+        });
+        setNotice(`Raffle draw recorded. The official result is being revealed; the homepage will announce ${winner.customerName}.`);
+      }
+      await loadDashboard();
+    } catch (drawError) {
+      setError(drawError instanceof Error ? drawError.message : 'Raffle draw could not be completed');
     } finally { setBusy(false); }
   };
 
@@ -671,18 +742,100 @@ export const AdminPortal: React.FC = () => {
             <Panel title="Catalog & campaign register" subtitle="Seller-owned products and raffle campaigns currently saved in MongoDB.">
               <DataTable headers={['Product', 'Seller', 'Category', 'Availability', 'Price']} rows={dashboard.products} render={(product, index) => <tr key={stringValue(product.id, String(index))} className="border-b border-slate-100 last:border-0"><td className="py-3"><strong>{stringValue(product.name)}</strong><span className="mt-1 block font-mono text-[10px] text-slate-400">{stringValue(product.id)}</span></td><td>{stringValue(product.sellerId)}</td><td>{stringValue(product.category)}</td><td><StatusBadge value={stringValue(product.status)} /> <span className="mt-1 block text-[10px] text-slate-500">{Number(product.stockQuantity || 0)} stock</span></td><td className="text-right font-bold">{formatCurrency(product.price)}</td></tr>} empty="No catalog products are available." />
             </Panel>
-            <Panel title="Raffle campaigns" subtitle={`${dashboard.campaigns.length} campaigns shown`}>
-              <DataTable headers={['Campaign', 'Seller', 'Status', 'Ticket price', 'Draw date']} rows={dashboard.campaigns} render={(campaign, index) => <tr key={stringValue(campaign.campaignId, String(index))} className="border-b border-slate-100 last:border-0"><td className="py-3"><strong>{stringValue(campaign.itemName)}</strong><span className="mt-1 block font-mono text-[10px] text-slate-400">{stringValue(campaign.campaignId)}</span></td><td>{stringValue(campaign.sellerId)}</td><td><StatusBadge value={stringValue(campaign.status)} /></td><td>{formatCurrency(campaign.ticketPrice)}</td><td>{dateValue(campaign.drawDate)}</td></tr>} empty="No raffle campaigns are registered." />
+          </div>}
+
+          {dashboard && section === 'raffles' && <div className="space-y-4">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
+              <strong>Draw rules:</strong> each purchased ticket in the active valid-ticket ledger is one separate entry. A purchaser with multiple valid tickets has proportionally higher odds. Each campaign draw is recorded once and cannot be repeated.
+            </div>
+            <Panel title="Raffle campaigns & winner draws" subtitle={`${dashboard.campaigns.length} campaigns · draw results are published on the public homepage`}>
+              <DataTable
+                headers={['Campaign / prize', 'Status', 'Eligible tickets', 'Winner', 'Admin action']}
+                rows={dashboard.campaigns}
+                render={(campaign, index) => {
+                  const draw = campaign.draw && typeof campaign.draw === 'object' ? campaign.draw as DataRow : null;
+                  const winner = draw?.winner && typeof draw.winner === 'object' ? draw.winner as DataRow : null;
+                  const campaignId = stringValue(campaign.campaignId, String(index));
+                  const eligibleCount = Number(campaign.eligibleUniqueTickets || 0);
+                  const status = stringValue(campaign.status, 'UNKNOWN');
+                  return (
+                    <tr key={campaignId} className="border-b border-slate-100 align-middle last:border-0">
+                      <td className="py-3"><strong>{stringValue(campaign.itemName)}</strong><span className="mt-1 block text-slate-500">{stringValue(campaign.sellerId)}</span><span className="mt-1 block font-mono text-[10px] text-slate-400">{campaignId}</span><span className="mt-1 block text-[10px] text-slate-500">Draw date: {dateValue(campaign.drawDate)}</span></td>
+                      <td><StatusBadge value={status} /></td>
+                      <td><strong>{eligibleCount.toLocaleString('en-IN')}</strong><span className="mt-1 block text-[10px] text-slate-500">one entry per ticket</span></td>
+                      <td>{winner
+                        ? <><strong>{stringValue(winner.customerName, 'Winner')}</strong><span className="mt-1 block font-mono text-[10px] text-slate-500">{stringValue(winner.ticketNumber, stringValue(draw?.ticketNumber))}</span><span className="mt-1 block text-[10px] text-slate-500">{dateValue(draw?.drawnAt)}</span></>
+                        : <span className="text-xs text-slate-400">Not drawn</span>}</td>
+                      <td>
+                        {status === 'ACTIVE' && eligibleCount > 0
+                          ? <button type="button" disabled={busy} onClick={() => void drawRaffleWinner(campaignId, stringValue(campaign.itemName, 'this prize'), eligibleCount)} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-emerald-900 px-3 py-2 text-[10px] font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50"><Trophy className="h-3.5 w-3.5 text-amber-300" />{busy ? 'Drawing…' : 'Draw winner'}</button>
+                          : <span className="text-[10px] text-slate-400">{status === 'DRAWN' ? 'Draw locked' : status === 'ACTIVE' ? 'No eligible purchasers' : 'Unavailable'}</span>}
+                      </td>
+                    </tr>
+                  );
+                }}
+                empty="No raffle campaigns are registered."
+              />
             </Panel>
           </div>}
 
-          {dashboard && section === 'governance' && <Panel title="Administrator audit trail" subtitle="Seller access status changes initiated from this console.">
-            <DataTable headers={['Time', 'Actor', 'Action', 'Seller']} rows={dashboard.auditEvents} render={(event, index) => <tr key={`${stringValue(event.sellerId)}-${index}`} className="border-b border-slate-100 last:border-0"><td className="py-3">{dateValue(event.occurredAt)}</td><td>{stringValue(event.actor)}</td><td><StatusBadge value={stringValue(event.action)} /></td><td className="font-mono text-[11px]">{stringValue(event.sellerId)}</td></tr>} empty="No administrator actions have been recorded yet." />
+          {dashboard && section === 'governance' && <Panel title="Administrator audit trail" subtitle="Seller access changes and raffle draws initiated from this console.">
+            <DataTable headers={['Time', 'Actor', 'Action', 'Target']} rows={dashboard.auditEvents} render={(event, index) => <tr key={`${stringValue(event.campaignId, stringValue(event.sellerId))}-${index}`} className="border-b border-slate-100 last:border-0"><td className="py-3">{dateValue(event.occurredAt)}</td><td>{stringValue(event.actor)}</td><td><StatusBadge value={stringValue(event.action)} /></td><td className="font-mono text-[11px]">{event.campaignId ? <>{stringValue(event.campaignId)}<span className="mt-1 block text-slate-500">{stringValue(event.ticketNumber)}</span></> : stringValue(event.sellerId)}</td></tr>} empty="No administrator actions have been recorded yet." />
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">The audit trail records approval and suspension actions. It is operational governance logging, not a substitute for an immutable external audit ledger.</div>
           </Panel>}
           <footer className="flex flex-wrap items-center justify-between gap-2 py-3 text-[10px] text-slate-400"><span>Restricted admin workspace · MongoDB-backed live records</span><span>Approval notifications use configured SMTP; recovery delivery requires configured SMTP and Twilio SMS.</span></footer>
         </div>
       </main>
+      {raffleReveal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#041a13]/90 p-4 backdrop-blur-md sm:p-8">
+          <div className={`relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-amber-200/30 bg-gradient-to-br from-[#0b3b2b] via-[#092f25] to-[#061c16] px-5 py-10 text-center text-white shadow-2xl shadow-black/40 transition-all sm:px-12 sm:py-14 ${raffleReveal.phase === 'winner' ? 'ring-2 ring-amber-300/70' : ''}`}>
+            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-rose-400/10 blur-3xl" />
+            <Sparkles className={`absolute left-[12%] top-[17%] h-7 w-7 text-amber-300 ${raffleReveal.phase === 'spinning' ? 'animate-pulse' : 'animate-bounce'}`} />
+            <Sparkles className={`absolute right-[13%] top-[25%] h-5 w-5 text-rose-200 ${raffleReveal.phase === 'spinning' ? 'animate-pulse' : 'animate-ping'}`} />
+            <Sparkles className="absolute bottom-[18%] left-[20%] h-5 w-5 animate-pulse text-amber-200" />
+            <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-200/30 bg-amber-300/10 text-amber-300 shadow-lg shadow-amber-950/20">
+              <Trophy className={`h-8 w-8 ${raffleReveal.phase === 'spinning' ? 'animate-pulse' : ''}`} />
+            </div>
+            <p className="relative mt-6 text-[10px] font-bold uppercase tracking-[0.24em] text-amber-200">
+              {raffleReveal.phase === 'spinning' ? 'Drawing from valid purchased tickets' : 'Official raffle winner'}
+            </p>
+            <h2 className="relative mt-2 font-serif text-2xl font-bold sm:text-3xl">{raffleReveal.prizeName}</h2>
+            <p className="relative mt-2 text-xs text-emerald-100/70">
+              {raffleReveal.entries.length.toLocaleString('en-IN')} eligible ticket entries · one entry per purchased ticket
+            </p>
+            <div key={`${raffleReveal.phase}-${raffleReveal.currentEntry.ticketNumber}`} className={`relative mx-auto mt-8 max-w-lg rounded-2xl border px-5 py-7 transition-all sm:px-8 sm:py-9 ${
+              raffleReveal.phase === 'winner'
+                ? 'border-amber-200/70 bg-gradient-to-br from-amber-300 to-amber-500 text-emerald-950 shadow-[0_0_70px_rgba(252,211,77,0.28)]'
+                : 'border-white/15 bg-white/[0.07] text-white shadow-inner'
+            }`}>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${raffleReveal.phase === 'winner' ? 'text-amber-950/70' : 'text-emerald-100/60'}`}>
+                {raffleReveal.phase === 'winner' ? 'Congratulations' : 'Selecting entry'}
+              </p>
+              <p className={`mt-3 break-words font-serif text-3xl font-black sm:text-5xl ${raffleReveal.phase === 'spinning' ? 'animate-pulse' : ''}`}>
+                {raffleReveal.currentEntry.customerName}
+              </p>
+              <p className={`mt-4 inline-flex rounded-full px-3 py-1.5 font-mono text-xs font-bold ${
+                raffleReveal.phase === 'winner' ? 'bg-white/50 text-emerald-950' : 'bg-black/20 text-amber-100'
+              }`}>
+                {raffleReveal.currentEntry.ticketNumber}
+              </p>
+            </div>
+            <p className="relative mx-auto mt-5 max-w-md text-[10px] leading-relaxed text-emerald-100/60">
+              {raffleReveal.phase === 'spinning'
+                ? 'The eligible ticket names are cycling. The displayed result will stop on the winner selected and recorded by the server.'
+                : 'This server-recorded result is locked for the campaign. The winner’s name and ticket will be announced on the public homepage.'}
+            </p>
+            {raffleReveal.phase === 'winner' && (
+              <button
+                type="button"
+                onClick={() => setRaffleReveal(null)}
+                className="relative mt-7 rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              >Close result</button>
+            )}
+          </div>
+        </div>
+      )}
       {dashboard && !portfolioChatOpen && (
         <button
           type="button"

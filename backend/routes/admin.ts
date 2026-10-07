@@ -3,9 +3,22 @@ import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { Collection, Document } from 'mongodb';
-import { getMongoDb } from '../data/mongo.js';
+import { getMongoClient, getMongoDb } from '../data/mongo.js';
 
 export const adminRouter = Router();
+
+interface RaffleTicketForDraw extends Document {
+  campaignId: string;
+  ticketNumber: string;
+  buyerId: string;
+  customerName: string;
+  status: string;
+}
+
+interface RaffleDrawEntry extends Document {
+  ticketNumber: string;
+  customerName: string;
+}
 
 interface AdminAccount extends Document {
   username: string;
@@ -157,6 +170,119 @@ const requireAdminAccess = async (req: Request, res: Response, next: NextFunctio
     return next();
   });
 };
+
+adminRouter.get('/raffle/:campaignId/entries', requireAdminAccess, async (req: Request, res: Response) => {
+  const campaignId = typeof req.params.campaignId === 'string' ? req.params.campaignId.trim() : '';
+  if (!campaignId || campaignId.length > 160) {
+    return res.status(400).json({ success: false, message: 'A valid campaign ID is required' });
+  }
+  try {
+    const campaign = await getMongoDb().collection('raffle_campaigns').findOne({ campaignId, status: 'ACTIVE' });
+    if (!campaign) return res.status(404).json({ success: false, message: 'Active raffle campaign not found' });
+    const entries = await getMongoDb().collection<RaffleDrawEntry>('raffle_tickets')
+      .find({ campaignId, status: 'ACTIVE_VALID', buyerId: { $type: 'string' as const, $ne: '' } })
+      .project({ _id: 0, ticketNumber: 1, customerName: 1 })
+      .sort({ ticketNumber: 1 })
+      .toArray();
+    return res.json({ success: true, entries });
+  } catch (error) {
+    console.error('Unable to load eligible raffle entries for administrator draw', error);
+    return res.status(503).json({ success: false, message: 'Eligible raffle entries are unavailable' });
+  }
+});
+
+adminRouter.post('/raffle/draw', requireAdminAccess, async (req: Request, res: Response) => {
+  const campaignId = typeof req.body.campaignId === 'string' ? req.body.campaignId.trim() : '';
+  if (!campaignId || campaignId.length > 160) {
+    return res.status(400).json({ success: false, message: 'A valid campaign ID is required' });
+  }
+
+  const db = getMongoDb();
+  const draws = db.collection('raffle_draws');
+  try {
+    const existingDraw = await draws.findOne({ campaignId });
+    if (existingDraw) return res.json({ success: true, alreadyDrawn: true, draw: existingDraw });
+
+    const campaign = await db.collection('raffle_campaigns').findOne({ campaignId, status: 'ACTIVE' });
+    if (!campaign) return res.status(404).json({ success: false, message: 'Active raffle campaign not found' });
+
+    const eligibleTicketFilter = { campaignId, status: 'ACTIVE_VALID', buyerId: { $type: 'string' as const, $ne: '' } };
+    const eligibleUniqueTickets = await db.collection<RaffleTicketForDraw>('raffle_tickets').countDocuments(eligibleTicketFilter);
+    if (!eligibleUniqueTickets) {
+      return res.status(400).json({ success: false, message: 'No eligible purchased tickets exist for this campaign' });
+    }
+
+    const [candidate] = await db.collection<RaffleTicketForDraw>('raffle_tickets')
+      .aggregate<RaffleTicketForDraw>([
+        { $match: eligibleTicketFilter },
+        { $sample: { size: 1 } }
+      ])
+      .toArray();
+    if (!candidate) return res.status(409).json({ success: false, message: 'No eligible ticket could be selected; refresh and retry' });
+
+    const drawnAt = new Date();
+    const draw = {
+      drawId: `DRAW-${randomBytes(12).toString('hex').toUpperCase()}`,
+      campaignId,
+      prizeName: String(campaign.itemName || 'Raffle prize'),
+      ticketNumber: candidate.ticketNumber,
+      winner: {
+        customerName: candidate.customerName,
+        ticketNumber: candidate.ticketNumber
+      },
+      eligibleUniqueTickets,
+      drawnAt,
+      algorithm: 'MongoDB random sample from eligible ticket records; each purchased ticket is one entry'
+    };
+    const session = getMongoClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        await draws.insertOne(draw, { session });
+        const ticketUpdate = await db.collection('raffle_tickets').updateOne(
+          { campaignId, ticketNumber: candidate.ticketNumber, status: 'ACTIVE_VALID' },
+          { $set: { status: 'WINNER_SELECTED' } },
+          { session }
+        );
+        if (!ticketUpdate.matchedCount) throw new Error('DRAW_TICKET_NOT_ACTIVE');
+        const campaignUpdate = await db.collection('raffle_campaigns').updateOne(
+          { campaignId, status: 'ACTIVE' },
+          {
+            $set: {
+              status: 'DRAWN',
+              drawnAt,
+              winningTicketNumber: candidate.ticketNumber,
+              winnerName: candidate.customerName
+            }
+          },
+          { session }
+        );
+        if (!campaignUpdate.matchedCount) throw new Error('DRAW_CAMPAIGN_NOT_ACTIVE');
+        await db.collection('admin_audit').insertOne({
+          actor: res.locals.admin.username,
+          action: 'RAFFLE_DRAW',
+          campaignId,
+          ticketNumber: candidate.ticketNumber,
+          occurredAt: drawnAt
+        }, { session });
+      });
+    } catch (error) {
+      if ((error as { code?: number }).code === 11000) {
+        const existing = await draws.findOne({ campaignId });
+        return res.json({ success: true, alreadyDrawn: true, draw: existing });
+      }
+      if ((error as Error).message === 'DRAW_TICKET_NOT_ACTIVE' || (error as Error).message === 'DRAW_CAMPAIGN_NOT_ACTIVE') {
+        return res.status(409).json({ success: false, message: 'Campaign changed during draw; refresh the portfolio and retry' });
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+    return res.json({ success: true, alreadyDrawn: false, draw });
+  } catch (error) {
+    console.error('Unable to complete administrator raffle draw', error);
+    return res.status(503).json({ success: false, message: 'Raffle draw could not be securely recorded' });
+  }
+});
 
 const deliverAdminOtp = async (otp: string, email: string, mobile: string): Promise<void> => {
   if (process.env.ADMIN_OTP_MODE?.trim().toLowerCase() === 'development') return;
@@ -530,8 +656,26 @@ adminRouter.get('/dashboard', requireAdminAccess, async (_req: Request, res: Res
         { $limit: 250 }
       ]).toArray()
     ]);
+    const campaignIds = campaigns.map(campaign => campaign.campaignId).filter((id): id is string => typeof id === 'string');
+    const [raffleDraws, eligibleRaffleParticipants] = await Promise.all([
+      db.collection('raffle_draws').find({ campaignId: { $in: campaignIds } }, {
+        projection: { _id: 0, drawId: 1, campaignId: 1, prizeName: 1, ticketNumber: 1, winner: 1, eligibleUniqueTickets: 1, drawnAt: 1 }
+      }).toArray(),
+      db.collection('raffle_tickets').aggregate<{ _id: string; eligibleUniqueTickets: number }>([
+        { $match: { campaignId: { $in: campaignIds }, status: 'ACTIVE_VALID', buyerId: { $type: 'string', $ne: '' } } },
+        { $group: { _id: { campaignId: '$campaignId', ticketNumber: '$ticketNumber' } } },
+        { $group: { _id: '$_id.campaignId', eligibleUniqueTickets: { $sum: 1 } } }
+      ]).toArray()
+    ]);
+    const raffleDrawByCampaign = new Map(raffleDraws.map(draw => [draw.campaignId, draw]));
+    const eligibleRaffleCountByCampaign = new Map(eligibleRaffleParticipants.map(entry => [entry._id, entry.eligibleUniqueTickets]));
+    const raffleCampaigns = campaigns.map(campaign => ({
+      ...campaign,
+      draw: raffleDrawByCampaign.get(campaign.campaignId) || null,
+      eligibleUniqueTickets: eligibleRaffleCountByCampaign.get(campaign.campaignId) || 0
+    }));
     const auditEvents = await db.collection('admin_audit').find({}, {
-      projection: { _id: 0, actor: 1, action: 1, sellerId: 1, occurredAt: 1 }
+      projection: { _id: 0, actor: 1, action: 1, sellerId: 1, campaignId: 1, ticketNumber: 1, occurredAt: 1 }
     }).sort({ occurredAt: -1 }).limit(100).toArray();
     const [vendorTotal, approvedCount, pendingCount, legacyPendingCount, suspendedCount] = await Promise.all([
       db.collection('sellers').countDocuments(),
@@ -555,7 +699,7 @@ adminRouter.get('/dashboard', requireAdminAccess, async (_req: Request, res: Res
         orders,
         donations,
         products,
-        campaigns,
+        campaigns: raffleCampaigns,
         orderChannels,
         referralChannels,
         donationCauses,

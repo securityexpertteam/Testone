@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trophy } from 'lucide-react';
 import { CharityCause, WelfareProduct, CartItem, DonationRecord, OrderBooking, RaffleTransactionRecord } from './types';
 import { CHARITY_CAUSES } from './data/causes';
 import { Navbar } from './components/Navbar';
@@ -20,6 +21,16 @@ import { AdminPortal } from './components/AdminPortal';
 import { Footer } from './components/Footer';
 import { API_BASE_URL } from './utils/api';
 import { getReferralId } from './utils/referral';
+
+interface PublicRaffleCampaign {
+  campaignId: string;
+  itemName: string;
+  status: string;
+  draw: {
+    drawnAt?: string;
+    winner?: { customerName?: string; ticketNumber?: string };
+  } | null;
+}
 
 function PublicApp() {
   useEffect(() => {
@@ -48,6 +59,7 @@ function PublicApp() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<WelfareProduct[]>([]);
   const [catalogLoadError, setCatalogLoadError] = useState('');
+  const [raffleCampaigns, setRaffleCampaigns] = useState<PublicRaffleCampaign[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartId] = useState(() => {
     const saved = localStorage.getItem('apw_cart_id');
@@ -94,6 +106,26 @@ function PublicApp() {
         if (active) setCatalogLoadError(error instanceof Error ? error.message : 'Product catalog is unavailable');
       });
     return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadRaffleResults = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/raffle/campaigns`);
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Raffle results are unavailable');
+        if (active) setRaffleCampaigns(Array.isArray(result.campaigns) ? result.campaigns : []);
+      } catch (error) {
+        console.error('Could not load public raffle results', error);
+      }
+    };
+    void loadRaffleResults();
+    const timer = window.setInterval(() => void loadRaffleResults(), 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -229,6 +261,24 @@ function PublicApp() {
         onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
         onNavigate={handleNavigate}
       />
+      {raffleCampaigns.some(campaign => campaign.status === 'DRAWN' && campaign.draw?.winner?.customerName) && (() => {
+        const latestWinner = raffleCampaigns
+          .filter(campaign => campaign.status === 'DRAWN' && campaign.draw?.winner?.customerName)
+          .sort((a, b) => Date.parse(b.draw?.drawnAt || '') - Date.parse(a.draw?.drawnAt || ''))[0];
+        if (!latestWinner) return null;
+        return (
+          <div role="status" className="border-b border-amber-200 bg-gradient-to-r from-amber-50 via-white to-rose-50 px-4 py-3 text-emerald-950 shadow-sm">
+            <div className="mx-auto flex max-w-7xl items-center justify-center gap-3 text-center">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800"><Trophy className="h-4 w-4" /></span>
+              <p className="text-xs leading-relaxed sm:text-sm">
+                <strong className="mr-1 text-amber-900">Raffle winner announced!</strong>
+                Congratulations to <strong>{latestWinner.draw?.winner?.customerName}</strong>, winner of {latestWinner.itemName}
+                {latestWinner.draw?.winner?.ticketNumber && <span className="text-slate-600"> · Ticket {latestWinner.draw.winner.ticketNumber}</span>}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main Page Content */}
       <main className="flex-1">

@@ -14,8 +14,7 @@ import {
   Sparkles,
   CheckCircle2,
   Copy,
-  Check,
-  UserCheck
+  Check
 } from 'lucide-react';
 
 interface RaffleAuditModalProps {
@@ -28,7 +27,7 @@ interface RaffleCampaignSummary {
   itemName: string;
   drawDate: string;
   status: string;
-  draw: { winner?: RaffleTransactionRecord } | null;
+  draw: { drawnAt?: string; winner?: { customerName?: string; ticketNumber?: string } } | null;
 }
 
 export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
@@ -40,8 +39,7 @@ export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
   const [filteredTickets, setFilteredTickets] = useState<RaffleTransactionRecord[]>([]);
   const [copiedTicket, setCopiedTicket] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tracker' | 'ledger' | 'winner-draw'>('tracker');
-  const [simulatedWinner, setSimulatedWinner] = useState<RaffleTransactionRecord | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [simulatedWinner, setSimulatedWinner] = useState<{ customerName?: string; ticketNumber?: string } | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [campaigns, setCampaigns] = useState<RaffleCampaignSummary[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
@@ -92,28 +90,6 @@ export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedTicket(text);
     setTimeout(() => setCopiedTicket(null), 2500);
-  };
-
-  const handleSimulateTransparentDraw = async () => {
-    if (!selectedCampaignId || !filteredTickets.some(ticket => ticket.status === 'ACTIVE_VALID')) return;
-    setIsDrawing(true);
-    setSimulatedWinner(null);
-    setErrorMessage('');
-    try {
-      const response = await fetch(`${API_BASE_URL}/raffle/draw`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignId: selectedCampaignId })
-      });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.message || 'Raffle draw failed');
-      setSimulatedWinner(result.winner);
-      await loadTickets();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Raffle draw failed');
-    } finally {
-      setIsDrawing(false);
-    }
   };
 
   return (
@@ -181,7 +157,7 @@ export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
             className={`pb-3 px-2 border-b-2 cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'winner-draw' ? 'border-amber-600 text-amber-900 font-extrabold' : 'border-transparent hover:text-slate-900'}`}
           >
             <Trophy className="w-4 h-4 text-amber-600" />
-            <span>Campaign Winner Draw</span>
+            <span>Winner results</span>
           </button>
         </div>
 
@@ -337,15 +313,15 @@ export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: Transparent Winner Selection Simulator */}
+          {/* TAB 3: Public winner result */}
           {activeTab === 'winner-draw' && (
             <div className="space-y-6 text-center py-4">
               <div className="max-w-md mx-auto space-y-2">
                 <h3 className="text-xl font-bold font-serif text-slate-900">
-                  One-time Campaign Winner Draw
+                  Official campaign result
                 </h3>
                 <p className="text-xs text-slate-600">
-                  The server selects from active MongoDB tickets for the chosen campaign. A unique database constraint allows only one recorded winner per campaign.
+                  Each valid purchased ticket is a separate entry. Buyers with multiple tickets have proportionally higher odds.
                 </p>
               </div>
 
@@ -360,31 +336,20 @@ export const RaffleAuditModal: React.FC<RaffleAuditModalProps> = ({
                       {simulatedWinner.ticketNumber}
                     </div>
                     <div className="text-xs text-slate-700 space-y-1">
-                      <p>Buyer: <strong>{simulatedWinner.customerName}</strong> ({simulatedWinner.communityApartment})</p>
-                      <p>Linked Mobile: <span className="font-mono">{simulatedWinner.mobileNumber}</span></p>
-                      <p>Order: <span className="font-mono">{simulatedWinner.orderId}</span></p>
+                      <p>Winner: <strong>{simulatedWinner.customerName}</strong></p>
+                      <p className="text-[10px] text-slate-500">Draw date: {campaigns.find(campaign => campaign.campaignId === selectedCampaignId)?.draw?.drawnAt || campaigns.find(campaign => campaign.campaignId === selectedCampaignId)?.drawDate}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="py-8 text-slate-400 text-xs font-mono">
-                    [Click below to initiate verified draw audit]
+                  <div className="py-8 text-slate-500 text-xs">
+                    This campaign has not been drawn yet. The public result will appear here after the administrator completes the official draw.
                   </div>
                 )}
 
-                <div className="mt-5">
-                  <button
-                    type="button"
-                    disabled={isDrawing || activeCampaignTicketCount === 0}
-                    onClick={handleSimulateTransparentDraw}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs uppercase tracking-wider shadow cursor-pointer transition disabled:opacity-50"
-                  >
-                    {isDrawing ? 'Recording campaign draw...' : 'Draw and lock campaign winner'}
-                  </button>
-                </div>
               </div>
 
               <p className="text-[11px] text-slate-400 max-w-md mx-auto">
-                All participant details are immutable and backed by physical dispatch manifests and Section 8 audit records.
+                Winner name and winning ticket are public. Personal contact and order information are kept private.
               </p>
             </div>
           )}
