@@ -1312,33 +1312,76 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                     </div>
                   </div>
 
-                  <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
-                    <div>
-                      <h5 className="font-bold text-xs uppercase text-slate-500 tracking-wider">Orders by Referral</h5>
-                      <p className="text-xs text-slate-500 mt-1">Order count and gross order revenue by referral ID.</p>
+                  <div className="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900">Referral performance</h5>
+                          <p className="mt-0.5 text-xs text-slate-500">Orders and gross revenue attributed to each referral.</p>
+                        </div>
+                      </div>
+                      {!isLoadingReferralSummary && !referralSummaryError && (
+                        <div className="flex gap-2 text-xs">
+                          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                            <span className="text-slate-500">Orders </span>
+                            <span className="font-bold text-slate-900">
+                              {referralSummaries.reduce((total, summary) => total + summary.orderCount, 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                            <span className="text-slate-500">Revenue </span>
+                            <span className="font-bold text-emerald-800">
+                              ₹{referralSummaries.reduce((total, summary) => total + summary.totalRevenue, 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {isLoadingReferralSummary && <p className="text-xs text-slate-500">Loading referral summary...</p>}
-                    {referralSummaryError && <p className="text-xs text-rose-700" role="alert">{referralSummaryError}</p>}
+                    {isLoadingReferralSummary && (
+                      <div className="flex items-center gap-2 px-4 py-6 text-xs text-slate-500">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                        Loading referral performance...
+                      </div>
+                    )}
+                    {referralSummaryError && (
+                      <p className="m-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert">
+                        {referralSummaryError}
+                      </p>
+                    )}
                     {!isLoadingReferralSummary && !referralSummaryError && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-100 text-slate-500">
-                              <th className="py-2 font-semibold">Referral ID</th>
-                              <th className="py-2 text-right font-semibold">Orders</th>
-                              <th className="py-2 text-right font-semibold">Revenue</th>
+                      <div className="overflow-x-auto px-4 pb-3">
+                        <table className="w-full min-w-[420px] text-left text-xs">
+                          <thead className="text-[10px] uppercase tracking-wider text-slate-500">
+                            <tr className="border-b border-slate-100">
+                              <th className="py-3 font-semibold">Referral partner</th>
+                              <th className="py-3 text-right font-semibold">Orders</th>
+                              <th className="py-3 text-right font-semibold">Gross revenue</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-100">
                             {referralSummaries.map(summary => (
-                              <tr key={summary.refid} className="border-b border-slate-50 last:border-0">
-                                <td className="py-2 font-semibold text-slate-800">{summary.refid}</td>
-                                <td className="py-2 text-right">{summary.orderCount.toLocaleString('en-IN')}</td>
-                                <td className="py-2 text-right font-semibold">₹{summary.totalRevenue.toLocaleString('en-IN')}</td>
+                              <tr key={summary.refid} className="transition-colors hover:bg-emerald-50/50">
+                                <td className="py-3">
+                                  <span className="inline-flex items-center gap-2 font-semibold text-slate-800">
+                                    <span className={`h-2 w-2 rounded-full ${summary.orderCount > 0 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                    {summary.refid}
+                                    {summary.orderCount > 0 && (
+                                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-800">Has orders</span>
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-right font-medium tabular-nums text-slate-700">{summary.orderCount.toLocaleString('en-IN')}</td>
+                                <td className="py-3 text-right font-bold tabular-nums text-slate-900">₹{summary.totalRevenue.toLocaleString('en-IN')}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
+                        {referralSummaries.every(summary => summary.orderCount === 0) && (
+                          <p className="border-t border-slate-100 py-3 text-center text-xs text-slate-500">No referral orders have been recorded yet.</p>
+                        )}
                       </div>
                     )}
                   </div>
