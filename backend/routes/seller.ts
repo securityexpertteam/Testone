@@ -189,6 +189,7 @@ const sellerOrderView = (order: any) => {
   const details = Array.isArray(order.orderDetails) ? order.orderDetails : [];
   return {
     orderId: metadata.orderId,
+    refid: order.refid || 'subhash',
     customerName: customer.fullName || '',
     customerMobile: customer.mobileNumber || '',
     customerEmail: customer.email || '',

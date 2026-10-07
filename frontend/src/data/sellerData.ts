@@ -30,6 +30,7 @@ export interface SellerProductItem {
 
 export interface SellerOrderItem {
   orderId: string;
+  refid: string;
   customerName: string;
   customerMobile: string;
   customerEmail: string;

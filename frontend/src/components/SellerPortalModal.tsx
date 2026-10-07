@@ -58,6 +58,36 @@ const formatTimeRemaining = (milliseconds: number): string => {
   return `${Math.ceil(totalHours / 24)}d`;
 };
 
+const downloadCsv = (filename: string, rows: object[]): boolean => {
+  if (rows.length === 0) return false;
+  const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
+  const escapeCell = (value: unknown) => {
+    const rawValue = value === null || value === undefined
+      ? ''
+      : Array.isArray(value)
+        ? value.join('; ')
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value);
+    const safeValue = /^[\s]*[=+\-@]/.test(rawValue) ? `'${rawValue}` : rawValue;
+    return `"${safeValue.replace(/"/g, '""')}"`;
+  };
+  const csv = [
+    columns.map(escapeCell).join(','),
+    ...rows.map(row => {
+      const values = row as Record<string, unknown>;
+      return columns.map(column => escapeCell(values[column])).join(',');
+    })
+  ].join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+  return true;
+};
+
 type SellerTab = 
   | 'dashboard'
   | 'products'
@@ -386,14 +416,11 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
     if (!orders.length) return showToast('There are no MongoDB orders to export yet.');
     const rows = orders.map(order => ({
       nodalPoint: order.nearbyNodalPoint || 'Unassigned', community: order.community, orderId: order.orderId,
-      orderDate: order.orderDate, status: order.status, customer: order.customerName,
+      refid: order.refid || 'subhash', orderDate: order.orderDate, estimatedDeliveryDate: order.estimatedDeliveryDate,
+      status: order.status, customer: order.customerName,
       amount: order.totalAmount, paymentStatus: order.paymentStatus, paymentMethod: order.paymentMethod
     }));
-    const columns = Object.keys(rows[0]) as (keyof typeof rows[number])[];
-    const escapeCsv = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const csv = [columns.join(','), ...rows.map(row => columns.map(column => escapeCsv(row[column])).join(','))].join('\r\n');
-    const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a'); link.href = url; link.download = 'seller-orders-nodal-payments.csv'; link.click(); URL.revokeObjectURL(url);
+    downloadCsv('seller-orders-nodal-payments.csv', rows);
   };
 
   const handleRaiseTicket = async (e: React.FormEvent) => {
@@ -437,6 +464,18 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
       totalRevenue, totalDonation, moneyReceived, awaitingPayment
     };
   }, [products, orders]);
+  const orderStatusBreakdown = [
+    { status: 'Pending', color: 'bg-amber-400' },
+    { status: 'Confirmed', color: 'bg-blue-500' },
+    { status: 'Packed', color: 'bg-violet-500' },
+    { status: 'Ready for Pickup', color: 'bg-emerald-500' },
+    { status: 'Shipped', color: 'bg-sky-500' },
+    { status: 'Delivered', color: 'bg-green-700' },
+    { status: 'Cancelled', color: 'bg-rose-500' }
+  ].map(item => ({
+    ...item,
+    count: orders.filter(order => order.status === item.status).length
+  }));
 
   const pendingPayoutTotal = payouts
     .filter(payout => payout.status === 'Processing' || payout.status === 'Scheduled')
@@ -495,11 +534,222 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
     URL.revokeObjectURL(url);
   };
 
+  const exportCurrentSection = () => {
+    const filename = `seller-${activeTab}-export.csv`;
+    let rows: object[] = [];
+    switch (activeTab) {
+      case 'dashboard':
+        rows = [
+          { metric: 'Products', value: metrics.totalProd },
+          { metric: 'Units in stock', value: metrics.totalStock },
+          { metric: 'Orders', value: orders.length },
+          { metric: 'Gross revenue INR', value: metrics.totalRevenue },
+          { metric: 'Donations INR', value: metrics.totalDonation },
+          { metric: 'Received payments INR', value: metrics.moneyReceived },
+          { metric: 'Awaiting payment INR', value: metrics.awaitingPayment }
+        ];
+        break;
+      case 'products':
+        rows = products.map(product => ({
+          productId: product.id,
+          name: product.name,
+          sku: product.sku,
+          barcode: product.barcode,
+          category: product.category,
+          priceINR: product.price,
+          discountPriceINR: product.discountPrice ?? '',
+          stockQuantity: product.stockQuantity,
+          donationPercentage: product.donationPercentage,
+          shippingAvailability: product.shippingAvailability,
+          status: product.status
+        }));
+        break;
+      case 'categories':
+        rows = productCategories.map(category => ({
+          category,
+          productCount: products.filter(product => product.category === category).length
+        }));
+        break;
+      case 'donations':
+        rows = Array.from(donationsByCause, ([cause, amountINR]) => ({ cause, amountINR }));
+        break;
+      case 'inventory':
+        rows = [
+          ...products.map(product => ({
+            recordType: 'stock',
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            currentQuantity: product.stockQuantity,
+            changeAmount: '',
+            reason: '',
+            recordedAt: ''
+          })),
+          ...inventoryLogs.map(log => ({
+            recordType: 'adjustment',
+            productId: log.productId,
+            productName: log.productName,
+            sku: log.sku,
+            currentQuantity: log.updatedQuantity,
+            changeAmount: log.changeAmount,
+            reason: log.reason,
+            recordedAt: log.timestamp
+          }))
+        ];
+        break;
+      case 'orders':
+        rows = orders.map(order => ({
+          orderId: order.orderId,
+          refid: order.refid || 'subhash',
+          customer: order.customerName,
+          nodalPoint: order.nearbyNodalPoint || 'Unassigned',
+          community: order.community,
+          pincode: order.pincode,
+          orderDate: order.orderDate,
+          deliveryWindow: order.estimatedDeliveryDate,
+          status: order.status,
+          amountINR: order.totalAmount,
+          paymentStatus: order.paymentStatus,
+          paymentMethod: order.paymentMethod
+        }));
+        break;
+      case 'shipping':
+        rows = shippingPlan.hubs.flatMap(hub => hub.orders.map((order, index) => {
+          const window = getDeliveryWindow(order);
+          return {
+            nodalPoint: hub.name,
+            queuePriority: index + 1,
+            orderId: order.orderId,
+            refid: order.refid || 'subhash',
+            community: order.community,
+            pincode: order.pincode,
+            status: order.status,
+            orderDate: order.orderDate,
+            deliveryWindow: order.estimatedDeliveryDate,
+            slaTarget: window ? formatDeliveryTime(window.end) : '',
+            totalAmountINR: order.totalAmount
+          };
+        }));
+        break;
+      case 'analytics':
+        rows = [
+          { recordType: 'metric', name: 'Total revenue INR', value: metrics.totalRevenue },
+          { recordType: 'metric', name: 'Net revenue INR', value: metrics.totalRevenue - platformFeeTotal },
+          { recordType: 'metric', name: 'Average order value INR', value: Math.round(averageOrderValue) },
+          { recordType: 'metric', name: 'Units sold', value: totalUnitsSold },
+          { recordType: 'metric', name: 'Cancellation rate percent', value: Number(cancellationRate.toFixed(1)) },
+          ...Array.from(revenueByCategory, ([name, value]) => ({ recordType: 'revenue by category', name, value })),
+          ...Array.from(donationsByCause, ([name, value]) => ({ recordType: 'donation by cause', name, value })),
+          ...referralSummaries.map(summary => ({
+            recordType: 'referral',
+            name: summary.refid,
+            orderCount: summary.orderCount,
+            revenueINR: summary.totalRevenue
+          }))
+        ];
+        break;
+      case 'payouts':
+        rows = payouts;
+        break;
+      case 'notifications':
+        rows = notifications.map(({ id, title, time, timestamp, read, type }) => ({
+          id,
+          title,
+          time: time || timestamp || '',
+          read: Boolean(read),
+          type: type || ''
+        }));
+        break;
+      case 'profile':
+        rows = [{
+          storeName: profile.storeName || '',
+          sellerId: profile.sellerId || '',
+          storeDescription: profile.storeDescription || '',
+          shippingPolicy: profilePolicies.shipping || ''
+        }];
+        break;
+      case 'settings':
+        rows = Object.entries(profileSettings).map(([setting, value]) => ({
+          setting,
+          value: typeof value === 'object' ? JSON.stringify(value) : value
+        }));
+        break;
+      case 'support':
+        rows = ticketsList.map(ticket => ({
+          ticketId: ticket.id || '',
+          subject: ticket.subject || '',
+          category: ticket.category || '',
+          status: ticket.status || '',
+          createdAt: ticket.createdAt || '',
+          description: ticket.description || ''
+        }));
+        break;
+      case 'security':
+        rows = [{
+          sellerId: profile.sellerId || '',
+          sessionStatus: jwtToken ? 'Active' : 'Not signed in',
+          dataStore: 'MongoDB',
+          exportedAt: new Date().toISOString()
+        }];
+        break;
+      default:
+        rows = [];
+    }
+
+    if (!downloadCsv(filename, rows)) {
+      showToast('There is no data in this section to export yet.');
+    }
+  };
+
+  const printCurrentSection = () => window.print();
+  const activeSectionTitle: Record<SellerTab, string> = {
+    dashboard: 'Dashboard',
+    products: 'Products',
+    categories: 'Categories',
+    donations: 'Donations',
+    inventory: 'Inventory',
+    orders: 'Orders',
+    shipping: 'Shipping & ETA',
+    analytics: 'Analytics',
+    payouts: 'Payouts',
+    notifications: 'Notifications',
+    profile: 'Store Profile',
+    settings: 'Settings',
+    support: 'Support',
+    security: 'Security & Audit'
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs overflow-hidden">
-      <div className="relative w-full h-full bg-white shadow-2xl overflow-hidden border-0 flex flex-col">
+    <div className="seller-portal-print-shell fixed inset-0 z-50 bg-black/75 backdrop-blur-xs overflow-hidden">
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          .seller-portal-print-shell,
+          .seller-portal-print-shell > div {
+            position: static !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            overflow: visible !important;
+            background: #fff !important;
+            box-shadow: none !important;
+          }
+          #seller-portal-print-area,
+          #seller-portal-print-area * { visibility: visible !important; }
+          #seller-portal-print-area {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
+          .seller-portal-print-controls { display: none !important; }
+        }
+      `}</style>
+      <div className="seller-portal-print-shell relative w-full h-full bg-white shadow-2xl overflow-hidden border-0 flex flex-col">
         
         {/* Toast Alert */}
         {toast && (
@@ -791,7 +1041,27 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
             </div>
 
             {/* Main Content Workspace */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div id="seller-portal-print-area" className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+              <div className="seller-portal-print-controls flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-800">Seller workspace</p>
+                  <h4 className="mt-0.5 text-sm font-bold text-slate-900">{activeSectionTitle[activeTab]}</h4>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={exportCurrentSection}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Export CSV
+                  </button>
+                  <button
+                    onClick={printCurrentSection}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-900"
+                  >
+                    <Printer className="h-3.5 w-3.5" /> Print / Save PDF
+                  </button>
+                </div>
+              </div>
 
               {/* ---------------------------------------------------- */}
               {/* TAB 1: SELLER DASHBOARD                              */}
@@ -1213,6 +1483,66 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                       </div>
                     ))}
                     {orders.length === 0 && <p className="text-xs text-slate-500">Nodal workload will appear as MongoDB orders are booked.</p>}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <h5 className="text-xs font-bold text-slate-900">Order status distribution</h5>
+                      <p className="mt-1 text-[10px] text-slate-500">Live count of saved orders by fulfillment stage.</p>
+                      <div className="mt-4 space-y-2.5">
+                        {orderStatusBreakdown.map(item => {
+                          const percent = orders.length ? Math.round((item.count / orders.length) * 100) : 0;
+                          return (
+                            <div key={item.status} className="grid grid-cols-[88px_1fr_30px] items-center gap-2 text-[10px]">
+                              <span className="truncate text-slate-600">{item.status}</span>
+                              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div className={`h-full rounded-full ${item.color}`} style={{ width: `${percent}%` }} />
+                              </div>
+                              <span className="text-right font-bold tabular-nums text-slate-800">{item.count}</span>
+                            </div>
+                          );
+                        })}
+                        {!orders.length && <p className="text-[11px] text-slate-500">No order status data is available yet.</p>}
+                      </div>
+                    </section>
+
+                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                      <div className="border-b border-slate-100 px-4 py-3">
+                        <h5 className="text-xs font-bold text-slate-900">Order and referral register</h5>
+                        <p className="mt-1 text-[10px] text-slate-500">Seller-only order attribution; legacy orders without a saved ID default to subhash.</p>
+                      </div>
+                      <div className="max-h-64 overflow-auto">
+                        <table className="w-full min-w-[610px] text-left text-[10px]">
+                          <thead className="sticky top-0 bg-slate-50 text-[9px] uppercase tracking-wide text-slate-500">
+                            <tr>
+                              <th className="px-3 py-2 font-bold">Order</th>
+                              <th className="px-3 py-2 font-bold">Ref ID</th>
+                              <th className="px-3 py-2 font-bold">Nodal point</th>
+                              <th className="px-3 py-2 font-bold">Status</th>
+                              <th className="px-3 py-2 text-right font-bold">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {orders
+                              .filter(order => orderStatusFilter === 'All' || order.status === orderStatusFilter)
+                              .map(order => (
+                                <tr key={order.orderId} className="hover:bg-emerald-50/50">
+                                  <td className="px-3 py-2 font-mono font-semibold text-slate-800">{order.orderId}</td>
+                                  <td className="px-3 py-2">
+                                    <span className="rounded-md bg-emerald-50 px-2 py-1 font-semibold text-emerald-800">{order.refid || 'subhash'}</span>
+                                  </td>
+                                  <td className="max-w-40 truncate px-3 py-2 text-slate-600">{order.nearbyNodalPoint || 'Unassigned'}</td>
+                                  <td className="px-3 py-2 text-slate-600">{order.status}</td>
+                                  <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-800">₹{order.totalAmount.toLocaleString('en-IN')}</td>
+                                </tr>
+                              ))}
+                            {!orders.length && (
+                              <tr><td colSpan={5} className="px-3 py-7 text-center text-slate-500">Order records will appear here after checkout.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
                   </div>
 
                   {/* Orders Cards List */}
