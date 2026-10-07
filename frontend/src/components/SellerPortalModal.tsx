@@ -110,7 +110,7 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
     setIsLoadingReferralSummary(true);
     setReferralSummaryError('');
     fetch(`${API_BASE_URL}/orders/referral-summary`, {
-      headers: { Authorization: `****** }
+      headers: { Authorization: `Bearer ${jwtToken}` }
     })
       .then(async response => {
         const result = await response.json();
