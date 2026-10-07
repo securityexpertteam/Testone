@@ -1,7 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownToLine, BadgeCheck, Building2, CircleDollarSign, ClipboardList,
-  LayoutDashboard, LockKeyhole, LogOut, Mail, RefreshCw, ShieldCheck, ShoppingBag,
+  Eye, EyeOff, LayoutDashboard, LockKeyhole, LogOut, Mail, RefreshCw, ShieldCheck, ShoppingBag,
   Store, TriangleAlert, Users, Wallet
 } from 'lucide-react';
 import { API_BASE_URL } from '../utils/api';
@@ -107,6 +107,7 @@ export const AdminPortal: React.FC = () => {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryMobile, setRecoveryMobile] = useState('');
@@ -345,7 +346,16 @@ export const AdminPortal: React.FC = () => {
           <LockKeyhole className="h-8 w-8 text-emerald-800" />
           <h1 className="text-2xl font-black text-slate-900">Set your private password</h1>
           <p className="text-sm leading-relaxed text-slate-600">This is the first sign-in. Replace the environment-provided bootstrap password before using administration features.</p>
-          <div><label className="text-xs font-bold text-slate-700">Current bootstrap password</label><input required type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm" /></div>
+          <div>
+            <label htmlFor="admin-current-password" className="text-xs font-bold text-slate-700">Current bootstrap password</label>
+            <div className="relative mt-1.5">
+              <input id="admin-current-password" required type={showCurrentPassword ? 'text' : 'password'} autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-3 pr-12 text-sm" />
+              <button type="button" onClick={() => setShowCurrentPassword(visible => !visible)} aria-label={showCurrentPassword ? 'Hide entered current password' : 'Show entered current password'} aria-pressed={showCurrentPassword} className="absolute inset-y-0 right-2 flex items-center rounded-lg px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="mt-1.5 text-[10px] text-slate-500">This only reveals what you typed here. It does not display or retrieve the backend password.</p>
+          </div>
           <div><label className="text-xs font-bold text-slate-700">New password (14+ characters)</label><input required type="password" minLength={14} autoComplete="new-password" value={newPassword} onChange={event => setNewPassword(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm" /></div>
           <button disabled={busy} className="w-full rounded-xl bg-emerald-900 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Updating…' : 'Change password and continue'}</button>
           {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-xs text-rose-800">{error}</p>}
