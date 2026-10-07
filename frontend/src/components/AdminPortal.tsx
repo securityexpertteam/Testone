@@ -105,6 +105,7 @@ export const AdminPortal: React.FC = () => {
   const [notice, setNotice] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -301,7 +302,16 @@ export const AdminPortal: React.FC = () => {
             {!recoveryOpen ? (
               <form className="space-y-4" onSubmit={signIn}>
                 <div><label className="text-xs font-bold text-slate-700">Administrator username</label><input required autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></div>
-                <div><label className="text-xs font-bold text-slate-700">Password</label><input required type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></div>
+                <div>
+                  <label htmlFor="admin-login-password" className="text-xs font-bold text-slate-700">Password</label>
+                  <div className="relative mt-1.5">
+                    <input id="admin-login-password" required type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-3 pr-20 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
+                    <button type="button" onClick={() => setShowLoginPassword(visible => !visible)} aria-pressed={showLoginPassword} className="absolute inset-y-1 right-1 flex items-center gap-1 rounded-lg px-2 text-xs font-bold text-emerald-900 hover:bg-emerald-50">
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showLoginPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
                 <button disabled={busy} className="w-full rounded-xl bg-emerald-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-60">{busy ? 'Verifying…' : 'Sign in securely'}</button>
                 <button type="button" onClick={() => { setRecoveryOpen(true); setError(''); }} className="w-full text-center text-xs font-semibold text-emerald-800 hover:underline">Recover administrator access</button>
               </form>
