@@ -37,6 +37,7 @@ export interface SellerOrderItem {
   nearbyNodalPoint: string;
   pincode: string;
   orderDate: string;
+  estimatedDeliveryDate: string;
   status: 'Pending' | 'Confirmed' | 'Packed' | 'Ready for Pickup' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded';
   totalAmount: number;
   donationTotal: number;

@@ -197,6 +197,7 @@ const sellerOrderView = (order: any) => {
     pincode: address.pincode || '',
     deliveryAddress: [address.houseFlatNumber, address.streetAddress, address.areaLocality, address.city, address.pincode].filter(Boolean).join(', '),
     orderDate: metadata.orderDate || '',
+    estimatedDeliveryDate: metadata.estimatedDeliveryDate || '',
     status,
     pickupReadyAt: order.pickupReadyAt,
     totalAmount: Number(metadata.totalAmount || 0),

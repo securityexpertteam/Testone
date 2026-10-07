@@ -25,6 +25,39 @@ interface ReferralSummary {
   totalRevenue: number;
 }
 
+interface DeliveryWindow {
+  start: number;
+  end: number;
+}
+
+const CLOSED_DELIVERY_STATUSES = new Set(['Delivered', 'Cancelled', 'Refunded']);
+
+const getDeliveryWindow = (order: SellerOrderItem): DeliveryWindow | null => {
+  const orderedAt = Date.parse(order.orderDate);
+  const sla = order.estimatedDeliveryDate.match(/(\d+)\s*[-–]\s*(\d+)\s*(hours?|days?)/i);
+  if (!Number.isFinite(orderedAt) || !sla) return null;
+
+  const unit = sla[3].toLowerCase().startsWith('day') ? 24 : 1;
+  return {
+    start: orderedAt + Number(sla[1]) * unit * 60 * 60_000,
+    end: orderedAt + Number(sla[2]) * unit * 60 * 60_000
+  };
+};
+
+const formatDeliveryTime = (timestamp: number): string => new Intl.DateTimeFormat('en-IN', {
+  timeZone: 'Asia/Kolkata',
+  day: 'numeric',
+  month: 'short',
+  hour: 'numeric',
+  minute: '2-digit'
+}).format(timestamp);
+
+const formatTimeRemaining = (milliseconds: number): string => {
+  const totalHours = Math.ceil(Math.abs(milliseconds) / (60 * 60_000));
+  if (totalHours < 24) return `${totalHours}h`;
+  return `${Math.ceil(totalHours / 24)}d`;
+};
+
 type SellerTab = 
   | 'dashboard'
   | 'products'
@@ -81,6 +114,50 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
     : {}) as Record<string, boolean>;
   const shippingRegions = Array.from(new Set(products.map(product => product.shippingAvailability).filter(Boolean)));
   const deliveryHubs = Array.from(new Set(orders.map(order => order.nearbyNodalPoint).filter(Boolean)));
+  const shippingPlan = useMemo(() => {
+    const now = Date.now();
+    const activeOrders = orders.filter(order => !CLOSED_DELIVERY_STATUSES.has(order.status));
+    const groupedOrders = new Map<string, SellerOrderItem[]>();
+    for (const order of activeOrders) {
+      const hubName = order.nearbyNodalPoint.trim() || 'Nodal point not assigned';
+      groupedOrders.set(hubName, [...(groupedOrders.get(hubName) || []), order]);
+    }
+
+    const hubs = Array.from(groupedOrders, ([name, hubOrders]) => {
+      const ordersByPriority = [...hubOrders].sort((first, second) => {
+        const firstWindow = getDeliveryWindow(first);
+        const secondWindow = getDeliveryWindow(second);
+        if (firstWindow && secondWindow && firstWindow.end !== secondWindow.end) return firstWindow.end - secondWindow.end;
+        if (firstWindow && !secondWindow) return -1;
+        if (!firstWindow && secondWindow) return 1;
+        return Date.parse(first.orderDate) - Date.parse(second.orderDate);
+      });
+      return {
+        name,
+        orders: ordersByPriority,
+        pincodeCount: new Set(hubOrders.map(order => order.pincode).filter(Boolean)).size,
+        preparing: hubOrders.filter(order => ['Pending', 'Confirmed', 'Packed'].includes(order.status)).length,
+        ready: hubOrders.filter(order => order.status === 'Ready for Pickup').length,
+        inTransit: hubOrders.filter(order => order.status === 'Shipped').length
+      };
+    }).sort((first, second) => second.orders.length - first.orders.length || first.name.localeCompare(second.name));
+
+    const activeWindows = activeOrders
+      .map(order => ({ order, window: getDeliveryWindow(order) }))
+      .filter((entry): entry is { order: SellerOrderItem; window: DeliveryWindow } => entry.window !== null);
+    const overdueCount = activeWindows.filter(entry => entry.window.end < now).length;
+    const dueWithinDayCount = activeWindows.filter(entry => entry.window.end >= now && entry.window.end <= now + 24 * 60 * 60_000).length;
+    const nextTarget = activeWindows.sort((first, second) => first.window.end - second.window.end)[0];
+
+    return {
+      activeOrders,
+      hubs,
+      overdueCount,
+      dueWithinDayCount,
+      readyCount: activeOrders.filter(order => order.status === 'Ready for Pickup').length,
+      nextTarget
+    };
+  }, [orders]);
 
   // Filters & Search
   const [productSearch, setProductSearch] = useState('');
@@ -1253,31 +1330,237 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
               {/* TAB 7: SHIPPING & FULFILLMENT                        */}
               {/* ---------------------------------------------------- */}
               {activeTab === 'shipping' && (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm sm:text-base">Shipping & Nodal Delivery SLAs</h4>
-                    <p className="text-xs text-slate-500">Shipping configuration and delivery hubs attached to this seller&apos;s MongoDB records.</p>
+                <div className="space-y-5">
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#073b2a] via-[#0b5a3e] to-[#11704c] p-5 text-white shadow-lg sm:p-6">
+                    <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border-[28px] border-white/5" />
+                    <div className="pointer-events-none absolute -bottom-24 right-36 h-48 w-48 rounded-full border-[24px] border-emerald-200/10" />
+                    <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="max-w-xl">
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-100/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
+                          <Truck className="h-3.5 w-3.5" />
+                          Fulfillment control
+                        </div>
+                        <h4 className="text-xl font-bold tracking-tight sm:text-2xl">Shipping & nodal dispatch</h4>
+                        <p className="mt-1.5 text-xs leading-relaxed text-emerald-50/80">
+                          Balance active orders across hubs and prioritize the next dispatch using each order&apos;s saved delivery window.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[440px]">
+                        {[
+                          { label: 'Active orders', value: shippingPlan.activeOrders.length, tone: 'text-white' },
+                          { label: 'Nodal points', value: shippingPlan.hubs.length, tone: 'text-white' },
+                          { label: 'Ready at hub', value: shippingPlan.readyCount, tone: 'text-emerald-200' },
+                          { label: 'Past SLA target', value: shippingPlan.overdueCount, tone: shippingPlan.overdueCount ? 'text-rose-200' : 'text-white' }
+                        ].map(metric => (
+                          <div key={metric.label} className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+                            <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-100/75">{metric.label}</p>
+                            <p className={`mt-1 text-xl font-bold tabular-nums ${metric.tone}`}>{metric.value.toLocaleString('en-IN')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
-                      <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                        <Truck className="w-4 h-4" />
-                        <span>Seller Shipping Policy</span>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900">Hub workload distribution</h5>
+                          <p className="mt-1 text-xs text-slate-500">Open orders grouped by their selected nodal point.</p>
+                        </div>
+                        <div className="rounded-xl bg-emerald-50 p-2 text-emerald-800">
+                          <MapPin className="h-4 w-4" />
+                        </div>
                       </div>
-                      <p className="text-slate-600">{String(profilePolicies.shipping || 'No shipping policy is saved for this seller.')}</p>
-                      <p className="font-semibold text-slate-700">Product shipping regions</p>
-                      {shippingRegions.map(region => <p key={region} className="text-slate-600">{region}</p>)}
-                      {shippingRegions.length === 0 && <p className="text-slate-500">No product shipping regions are saved.</p>}
-                    </div>
+                      {shippingPlan.hubs.length ? (
+                        <div className="space-y-4">
+                          {shippingPlan.hubs.map(hub => {
+                            const share = shippingPlan.activeOrders.length
+                              ? Math.round((hub.orders.length / shippingPlan.activeOrders.length) * 100)
+                              : 0;
+                            return (
+                              <div key={hub.name}>
+                                <div className="mb-1.5 flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-xs font-bold text-slate-800">{hub.name}</p>
+                                    <p className="mt-0.5 text-[10px] text-slate-500">
+                                      {hub.pincodeCount ? `${hub.pincodeCount} delivery area${hub.pincodeCount === 1 ? '' : 's'}` : 'Pincode not recorded'}
+                                    </p>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <span className="text-sm font-bold tabular-nums text-slate-900">{hub.orders.length}</span>
+                                    <span className="ml-1 text-[10px] text-slate-500">orders · {share}%</span>
+                                  </div>
+                                </div>
+                                <div className="flex h-2 overflow-hidden rounded-full bg-slate-100" aria-label={`${hub.name}: ${share}% of active orders`}>
+                                  {hub.preparing > 0 && <div className="bg-amber-400" style={{ width: `${(hub.preparing / hub.orders.length) * 100}%` }} />}
+                                  {hub.ready > 0 && <div className="bg-emerald-500" style={{ width: `${(hub.ready / hub.orders.length) * 100}%` }} />}
+                                  {hub.inTransit > 0 && <div className="bg-sky-500" style={{ width: `${(hub.inTransit / hub.orders.length) * 100}%` }} />}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+                                  <span><i className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />Preparing {hub.preparing}</span>
+                                  <span><i className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />Ready {hub.ready}</span>
+                                  <span><i className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />In transit {hub.inTransit}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                          <MapPin className="mx-auto h-5 w-5 text-slate-400" />
+                          <p className="mt-2 text-xs font-semibold text-slate-700">No active hub workload</p>
+                          <p className="mt-1 text-[11px] text-slate-500">New open orders will be distributed here by nodal point.</p>
+                        </div>
+                      )}
+                      <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-3 text-[10px] text-slate-500">
+                        <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />Preparing</span>
+                        <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />Ready at hub</span>
+                        <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-sky-500" />In transit</span>
+                      </div>
+                    </section>
 
-                    <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
-                      <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                        <MapPin className="w-4 h-4" />
-                        <span>Order Delivery Hubs</span>
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900">SLA watch</h5>
+                          <p className="mt-1 text-xs text-slate-500">Based on the delivery window saved with each order.</p>
+                        </div>
+                        <div className={`rounded-xl p-2 ${shippingPlan.overdueCount ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-800'}`}>
+                          <TrendingUp className="h-4 w-4" />
+                        </div>
                       </div>
-                      {deliveryHubs.map(hub => <p key={hub} className="text-slate-600">{hub}</p>)}
-                      {deliveryHubs.length === 0 && <p className="text-slate-500">No delivery hubs appear on MongoDB orders yet.</p>}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className={`rounded-xl border p-3 ${shippingPlan.overdueCount ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Past latest target</p>
+                          <p className={`mt-1 text-2xl font-bold tabular-nums ${shippingPlan.overdueCount ? 'text-rose-700' : 'text-slate-900'}`}>{shippingPlan.overdueCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">Target in 24h</p>
+                          <p className="mt-1 text-2xl font-bold tabular-nums text-amber-800">{shippingPlan.dueWithinDayCount}</p>
+                        </div>
+                      </div>
+                      {shippingPlan.nextTarget ? (
+                        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-800">Next delivery target</p>
+                          <p className="mt-1 text-sm font-bold text-slate-900">{shippingPlan.nextTarget.order.nearbyNodalPoint || 'Nodal point not assigned'}</p>
+                          <p className="mt-1 text-[11px] text-slate-600">
+                            {shippingPlan.nextTarget.order.orderId} · {shippingPlan.nextTarget.order.community || 'Community not recorded'}
+                          </p>
+                          <p className="mt-2 text-xs font-semibold text-emerald-900">
+                            {formatDeliveryTime(shippingPlan.nextTarget.window.end)}
+                            <span className="ml-1 font-normal text-slate-500">India time</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No active orders have a parseable delivery window.</p>
+                      )}
+                      <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
+                        ETA targets use the stored SLA and order time; they are not live carrier or traffic estimates.
+                      </p>
+                    </section>
+                  </div>
+
+                  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-xl bg-slate-900 p-2 text-white"><Truck className="h-4 w-4" /></div>
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900">Prioritized dispatch plan</h5>
+                          <p className="mt-0.5 text-xs text-slate-500">Grouped by nodal point, earliest delivery target first.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setOrderStatusFilter('All'); setActiveTab('orders'); }}
+                        className="self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 sm:self-auto"
+                      >
+                        Manage orders
+                      </button>
+                    </div>
+                    {shippingPlan.hubs.length ? (
+                      <div className="divide-y divide-slate-100">
+                        {shippingPlan.hubs.map(hub => (
+                          <div key={hub.name} className="p-4 sm:p-5">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="flex min-w-0 items-center gap-2.5">
+                                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-800"><MapPin className="h-4 w-4" /></div>
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-bold text-slate-900">{hub.name}</p>
+                                  <p className="text-[10px] text-slate-500">{hub.orders.length} open order{hub.orders.length === 1 ? '' : 's'} in this hub queue</p>
+                                </div>
+                              </div>
+                              <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">Priority queue</span>
+                            </div>
+                            <div className="space-y-2">
+                              {hub.orders.map((order, index) => {
+                                const window = getDeliveryWindow(order);
+                                const late = window ? window.end < Date.now() : false;
+                                const opensIn = window && window.start > Date.now();
+                                return (
+                                  <div key={order.orderId} className="grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[11px] font-bold text-slate-500 shadow-sm">{index + 1}</span>
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="text-xs font-bold text-slate-900">{order.orderId}</p>
+                                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${late ? 'bg-rose-100 text-rose-800' : order.status === 'Ready for Pickup' ? 'bg-emerald-100 text-emerald-800' : order.status === 'Shipped' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}`}>
+                                          {late ? 'SLA overdue' : order.status}
+                                        </span>
+                                      </div>
+                                      <p className="mt-1 truncate text-[11px] text-slate-600">{order.community || 'Community not recorded'} · PIN {order.pincode || '—'}</p>
+                                      <p className="mt-1 text-[10px] text-slate-500">
+                                        {window
+                                          ? `${opensIn ? `Window opens ${formatDeliveryTime(window.start)} · ` : ''}Target by ${formatDeliveryTime(window.end)}${late ? ` · overdue ${formatTimeRemaining(Date.now() - window.end)}` : ''}`
+                                          : order.estimatedDeliveryDate || 'No delivery window recorded'}
+                                      </p>
+                                    </div>
+                                    <div className="col-start-2 flex flex-wrap items-center justify-between gap-2 sm:col-start-auto sm:justify-end">
+                                      <span className="text-[10px] font-semibold text-slate-600">{order.status === 'Shipped' ? order.courierPartner || 'In transit' : order.status === 'Ready for Pickup' ? 'Awaiting collection' : 'Dispatch pending'}</span>
+                                      <button
+                                        onClick={() => { setOrderStatusFilter('All'); setActiveTab('orders'); }}
+                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-emerald-800 hover:bg-emerald-50"
+                                      >
+                                        Open orders
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-10 text-center">
+                        <Truck className="mx-auto h-6 w-6 text-slate-300" />
+                        <p className="mt-2 text-xs font-semibold text-slate-700">Dispatch queue is clear</p>
+                        <p className="mt-1 text-[11px] text-slate-500">New active orders will appear here, grouped by nodal point.</p>
+                      </div>
+                    )}
+                  </section>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-2 text-emerald-800">
+                        <Truck className="h-4 w-4" />
+                        <h5 className="text-xs font-bold">Seller shipping policy</h5>
+                      </div>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-600">{String(profilePolicies.shipping || 'No shipping policy is saved for this seller.')}</p>
+                      <p className="mt-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Product shipping regions</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {shippingRegions.map(region => <span key={region} className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600">{region}</span>)}
+                        {shippingRegions.length === 0 && <span className="text-[11px] text-slate-500">No product regions configured.</span>}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-2 text-emerald-800">
+                        <MapPin className="h-4 w-4" />
+                        <h5 className="text-xs font-bold">Recorded delivery network</h5>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500">{deliveryHubs.length} nodal point{deliveryHubs.length === 1 ? '' : 's'} appear across all saved orders.</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {deliveryHubs.map(hub => <span key={hub} className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-900">{hub}</span>)}
+                        {deliveryHubs.length === 0 && <span className="text-[11px] text-slate-500">No delivery hubs recorded yet.</span>}
+                      </div>
                     </div>
                   </div>
                 </div>
