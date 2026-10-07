@@ -223,9 +223,57 @@ export const requireCustomerSession = (req: Request, res: Response, next: NextFu
   }
 };
 
-authRouter.post('/seller/register', (_req: Request, res: Response) =>
-  res.status(403).json({ success: false, message: 'Seller accounts are invitation-only. Contact the collaboration team.' })
-);
+authRouter.post('/seller/register', async (req: Request, res: Response) => {
+  const storeName = typeof req.body.storeName === 'string' ? req.body.storeName.trim() : '';
+  const sellerName = typeof req.body.sellerName === 'string' ? req.body.sellerName.trim() : '';
+  const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const gstin = typeof req.body.gstin === 'string' ? req.body.gstin.trim().toUpperCase() : '';
+  if (
+    !storeName || storeName.length > 120 ||
+    !sellerName || sellerName.length > 120 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+    password.length < 12 || password.length > 128 ||
+    !/^\+?[\d\s()-]{8,20}$/.test(phone) ||
+    gstin.length > 32
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: 'Enter a store name, representative, valid email and phone, and a password of 12–128 characters'
+    });
+  }
+
+  try {
+    const sellers = getSellers();
+    const existingSeller = await sellers.findOne({ email }, { projection: { _id: 1 } });
+    if (existingSeller) {
+      return res.status(409).json({ success: false, message: 'An account or application already exists for this email' });
+    }
+    const seller: SellerAccount = {
+      email,
+      passwordHash: hashSellerPassword(password),
+      sellerId: `SLR-${randomBytes(6).toString('hex').toUpperCase()}`,
+      storeName,
+      sellerName,
+      phone,
+      gstin: gstin || 'PENDING_VERIFICATION',
+      status: 'PENDING_REVIEW',
+      createdAt: new Date()
+    };
+    await sellers.insertOne(seller);
+    return res.status(201).json({
+      success: true,
+      message: 'Application received. Admin review and approval are required before seller sign-in is enabled.'
+    });
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      return res.status(409).json({ success: false, message: 'An account or application already exists for this email' });
+    }
+    console.error('Unable to save seller application', error);
+    return res.status(503).json({ success: false, message: 'Seller application could not be submitted' });
+  }
+});
 
 authRouter.post('/admin/sellers', requireSellerAdminKey, async (req: Request, res: Response) => {
   const storeName = typeof req.body.storeName === 'string' ? req.body.storeName.trim() : '';

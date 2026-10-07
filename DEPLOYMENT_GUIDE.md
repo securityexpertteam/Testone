@@ -69,14 +69,14 @@ Email delivery requires all of `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_
 
 ### Seller governance and access
 
-Public seller self-registration is disabled. The public site links to a collaboration information dialog; the seller workspace is deployed separately as `akshaya-patra-seller-portal` and accepts only accounts with `status: "APPROVED"`. Existing seller records without this status cannot log in until they have been reviewed and explicitly approved. Suspending an account revokes seller API access on the next request, including for an already-issued session token.
+Seller applicants can submit an application from the separate seller portal. Applications create a `PENDING_REVIEW` account and do not grant login access; the seller workspace accepts only accounts with `status: "APPROVED"`. Existing seller records without this status cannot log in until reviewed and explicitly approved. Suspending an account revokes seller API access on the next request, including for an already-issued session token.
 
 Set `SELLER_ADMIN_KEY` on the backend to a unique random value of at least 32 characters. Trusted staff can use the backend-only administration API over HTTPS:
 
 - `POST /api/auth/admin/sellers` with `X-Seller-Admin-Key` and JSON fields `storeName`, `sellerName`, `email`, `phone`, optional `gstin`, and a one-time password of at least 12 characters creates an account in `PENDING_REVIEW`. Deliver initial credentials through a verified, private channel.
 - `GET /api/auth/admin/sellers` with `X-Seller-Admin-Key` lists account IDs and approval status without returning password hashes.
 - `PATCH /api/auth/admin/sellers/:sellerId/status` with the same header and `{ "status": "APPROVED" }` or `{ "status": "SUSPENDED" }` updates an existing seller's access after review. Newly provisioned and legacy accounts must be explicitly approved after due diligence.
-- `POST /api/auth/seller/register` is retained only as a compatibility response and rejects registration.
+- `POST /api/auth/seller/register` accepts seller applications with a 12+ character password and saves them as `PENDING_REVIEW`; an administrator must approve the seller before login is enabled.
 
 Do not place `SELLER_ADMIN_KEY` in browser code, static-site settings, URLs, or support messages. If the key is exposed, rotate it in the backend environment and redeploy the backend. Apply the seller-portal static service from the Blueprint; the Render dashboard will show its separate URL. The public site intentionally does not expose a direct seller login link.
 

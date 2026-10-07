@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  X, Store, Lock, ArrowRight, ShieldCheck, Mail, Key, Package, Truck, Heart,
+  X, Store, Lock, ArrowRight, ShieldCheck, Mail, Key, Package, Truck, Heart, UserPlus,
   LogOut, CheckCircle2, Check, MapPin, RefreshCw, Plus, Edit2,
   Trash2, Search, AlertTriangle, Download, Printer, BarChart3, Bell,
   Settings, HelpCircle, Shield, Eye, Send, Building2,
@@ -112,6 +112,10 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
   const [jwtToken, setJwtToken] = useState<string | null>(null);
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [showSellerApplication, setShowSellerApplication] = useState(false);
+  const [application, setApplication] = useState({ storeName: '', sellerName: '', phone: '', gstin: '', password: '' });
+  const [applicationMessage, setApplicationMessage] = useState('');
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
   const [portalSaveStatus, setPortalSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
 
   // Active section tab
@@ -311,6 +315,29 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
       setAuthError(error instanceof Error ? error.message : 'Seller login failed');
     } finally {
       setIsAuthenticating(false);
+    }
+  };
+
+  const handleSellerApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingApplication(true);
+    setAuthError('');
+    setApplicationMessage('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/seller/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...application, email })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Seller application could not be submitted');
+      setApplicationMessage(result.message || 'Application submitted for admin review.');
+      setApplication({ storeName: '', sellerName: '', phone: '', gstin: '', password: '' });
+      setShowSellerApplication(false);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Seller application could not be submitted');
+    } finally {
+      setIsSubmittingApplication(false);
     }
   };
 
@@ -778,56 +805,76 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Approved seller access</p>
+                    <p className="text-xs font-bold text-slate-900">Seller access by review</p>
                     <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                      This workspace is for seller accounts reviewed and provisioned by the collaboration team. Self-service registration is disabled.
+                      Submit an application here. Admin approval is required before your account can sign in or access seller data.
                     </p>
                   </div>
                 </div>
               </div>
-              <form onSubmit={handleLogin} className="space-y-3.5 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Seller Registered Email / ID *</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50"
-                    />
+              {applicationMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-900">{applicationMessage}</p>}
+              {showSellerApplication ? (
+                <form onSubmit={handleSellerApplication} className="space-y-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Apply to become a seller</h3>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">Your application will be reviewed before seller login is enabled. Use the password you want to keep if approved.</p>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Password / Security Key *</label>
-                  <div className="relative">
-                    <Key className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50 font-mono"
-                    />
+                  <label className="block text-xs font-semibold text-slate-700">Store / organization name *
+                    <input required maxLength={120} value={application.storeName} onChange={event => setApplication(current => ({ ...current, storeName: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">Representative name *
+                    <input required maxLength={120} value={application.sellerName} onChange={event => setApplication(current => ({ ...current, sellerName: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">Registered email *
+                    <input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">Phone number *
+                    <input required type="tel" autoComplete="tel" value={application.phone} onChange={event => setApplication(current => ({ ...current, phone: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">GSTIN / registration ID <span className="font-normal text-slate-400">(optional)</span>
+                    <input maxLength={32} value={application.gstin} onChange={event => setApplication(current => ({ ...current, gstin: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs focus:outline-emerald-600" />
+                  </label>
+                  <label className="block text-xs font-semibold text-slate-700">Password for approved account * <span className="font-normal text-slate-400">(12–128 characters)</span>
+                    <input required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={application.password} onChange={event => setApplication(current => ({ ...current, password: event.target.value }))} className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs font-mono focus:outline-emerald-600" />
+                  </label>
+                  <button type="submit" disabled={isSubmittingApplication} className="w-full rounded-xl bg-[#0e4429] py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#08301d] disabled:opacity-60">
+                    {isSubmittingApplication ? 'Submitting application…' : 'Submit for admin review'}
+                  </button>
+                  <button type="button" onClick={() => { setShowSellerApplication(false); setAuthError(''); }} className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-800">Back to seller sign in</button>
+                  {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
+                </form>
+              ) : (
+                <>
+                  <form onSubmit={handleLogin} className="space-y-3.5 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Seller Registered Email *</label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input type="email" required value={email} onChange={event => setEmail(event.target.value)} className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Password *</label>
+                      <div className="relative">
+                        <Key className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input type="password" required value={password} onChange={event => setPassword(event.target.value)} className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600 bg-slate-50/50 font-mono" />
+                      </div>
+                    </div>
+                    <button type="submit" disabled={isAuthenticating} className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0e4429] py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#08301d] disabled:opacity-60">
+                      <Lock className="h-3.5 w-3.5 text-emerald-300" />
+                      <span>{isAuthenticating ? 'Loading seller data...' : 'Sign In to Seller Dashboard'}</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
+                  </form>
+                  <div className="text-center">
+                    <button type="button" onClick={() => { setShowSellerApplication(true); setAuthError(''); setApplicationMessage(''); }} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-50">
+                      <UserPlus className="h-4 w-4" /> Apply for seller access
+                    </button>
+                    <p className="mt-2 text-[10px] leading-relaxed text-slate-500">Applications are reviewed by an administrator before seller access is enabled.</p>
                   </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isAuthenticating}
-                  className="w-full py-2.5 rounded-xl bg-[#0e4429] hover:bg-[#08301d] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer mt-2"
-                >
-                  <Lock className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>{isAuthenticating ? 'Loading seller data...' : 'Sign In to Seller Dashboard'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-                {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
-              </form>
-              <p className="text-center text-[10px] leading-relaxed text-slate-500">
-                Need to join the seller network? Contact the collaboration team from the public website. Never share your password or OTP.
-              </p>
+                </>
+              )}
             </div>
           </div>
         ) : (
