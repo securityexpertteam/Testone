@@ -82,9 +82,7 @@ const issueAdminToken = (username: string, tokenVersion: number, mustChangePassw
 
 const ensureInitialAdmin = async (): Promise<AdminAccount> => {
   const config = getConfiguredAdmin();
-  if (!config.username || !validEmail(config.email) || !config.mobile) {
-    throw new Error('ADMIN_USERNAME, ADMIN_EMAIL, and ADMIN_MOBILE must be configured');
-  }
+  if (!config.username) throw new Error('ADMIN_USERNAME must be configured');
   const collection = admins();
   let admin = await collection.findOne({ username: config.username });
   if (!admin) {
@@ -264,7 +262,7 @@ adminRouter.post('/recovery/request', async (req: Request, res: Response) => {
   const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const mobile = typeof req.body.mobile === 'string' ? req.body.mobile.replace(/[^\d+]/g, '') : '';
   const resetCode = typeof req.body.resetCode === 'string' ? req.body.resetCode : '';
-  if (!config.resetCode || config.resetCode.length < 32) {
+  if (!config.username || !validEmail(config.email) || !config.mobile || !config.resetCode || config.resetCode.length < 32) {
     return res.status(503).json({ success: false, message: 'Administrator recovery is not configured' });
   }
   if (
@@ -311,6 +309,9 @@ adminRouter.post('/recovery/verify', async (req: Request, res: Response) => {
   const mobile = typeof req.body.mobile === 'string' ? req.body.mobile.replace(/[^\d+]/g, '') : '';
   const resetCode = typeof req.body.resetCode === 'string' ? req.body.resetCode : '';
   const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
+  if (!config.username || !validEmail(config.email) || !config.mobile || !config.resetCode || config.resetCode.length < 32) {
+    return res.status(503).json({ success: false, message: 'Administrator recovery is not configured' });
+  }
   if (
     username !== config.username || email !== config.email || mobile !== config.mobile ||
     !secureEqual(config.resetCode, resetCode) || !/^\d{6}$/.test(otp)
