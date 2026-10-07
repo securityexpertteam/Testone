@@ -106,7 +106,6 @@ type SellerTab =
 
 export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, onClose }) => {
   // Auth state
-  const [authView, setAuthView] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -114,14 +113,6 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [portalSaveStatus, setPortalSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
-
-  // Registration form
-  const [regStoreName, setRegStoreName] = useState('');
-  const [regSellerName, setRegSellerName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regGstin, setRegGstin] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regPassword, setRegPassword] = useState('');
 
   // Active section tab
   const [activeTab, setActiveTab] = useState<SellerTab>('dashboard');
@@ -318,36 +309,6 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
       showToast('Seller data loaded from MongoDB.');
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Seller login failed');
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAuthenticating(true);
-    setAuthError('');
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/seller/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storeName: regStoreName,
-          sellerName: regSellerName,
-          email: regEmail,
-          phone: regPhone,
-          gstin: regGstin,
-          password: regPassword
-        })
-      });
-      const result = await response.json();
-      if (!response.ok || !result.token) throw new Error(result.message || 'Seller registration failed');
-      await loadPortalState(result.token);
-      setJwtToken(result.token);
-      setIsLoggedIn(true);
-      showToast('Seller account created and data loaded from MongoDB.');
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Seller registration failed');
     } finally {
       setIsAuthenticating(false);
     }
@@ -808,40 +769,22 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
 
                 {isLoggedIn && <span className={`text-[10px] ${portalSaveStatus === 'error' ? 'text-rose-200' : 'text-emerald-100'}`}>{portalSaveStatus === 'saving' ? 'Saving to MongoDB...' : portalSaveStatus === 'saved' ? 'Saved in MongoDB' : 'MongoDB save failed'}</span>}
         {/* ======================================================== */}
-        {/* VIEW 1: AUTHENTICATION FLOW (LOGIN, REGISTER, FORGOT)   */}
+        {/* VIEW 1: APPROVED SELLER SIGN IN                         */}
         {/* ======================================================== */}
         {!isLoggedIn ? (
           <div className="p-6 space-y-5 bg-[#fafaf8] overflow-y-auto">
-            {/* Auth Mode Tabs */}
-            <div className="flex border-b border-slate-200">
-              <button
-                onClick={() => setAuthView('login')}
-                className={`flex-1 pb-2 text-xs font-bold border-b-2 text-center transition cursor-pointer ${
-                  authView === 'login' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-slate-500'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setAuthView('register')}
-                className={`flex-1 pb-2 text-xs font-bold border-b-2 text-center transition cursor-pointer ${
-                  authView === 'register' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-slate-500'
-                }`}
-              >
-                Register SHG / Artisan
-              </button>
-              <button
-                onClick={() => setAuthView('forgot')}
-                className={`flex-1 pb-2 text-xs font-bold border-b-2 text-center transition cursor-pointer ${
-                  authView === 'forgot' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-slate-500'
-                }`}
-              >
-                Reset Password
-              </button>
-            </div>
-
-            {/* Tab 1: Login */}
-            {authView === 'login' && (
+            <div className="mx-auto w-full max-w-xl space-y-4">
+              <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">Approved seller access</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                      This workspace is for seller accounts reviewed and provisioned by the collaboration team. Self-service registration is disabled.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <form onSubmit={handleLogin} className="space-y-3.5 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Seller Registered Email / ID *</label>
@@ -882,115 +825,10 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                 </button>
                 {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
               </form>
-            )}
-
-            {/* Tab 2: Register */}
-            {authView === 'register' && (
-              <form
-                onSubmit={handleRegister}
-                className="space-y-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs"
-              >
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Cluster / Cooperative / SHG Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Pochampally Organic Weavers SHG"
-                    value={regStoreName}
-                    onChange={(e) => setRegStoreName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Primary Representative *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Lakshmi Devi"
-                      value={regSellerName}
-                      onChange={(e) => setRegSellerName(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Phone / WhatsApp *</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+91 98490 12345"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Business Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="weaver@cooperative.org"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">GSTIN or Village SHG Reg. Number *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter GSTIN or village SHG registration number"
-                    value={regGstin}
-                    onChange={(e) => setRegGstin(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Password (8 characters minimum) *</label>
-                  <input
-                    type="password"
-                    minLength={8}
-                    required
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isAuthenticating}
-                  className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition cursor-pointer"
-                >
-                  {isAuthenticating ? 'Creating account...' : 'Create Seller Account'}
-                </button>
-                {authError && <p className="text-xs text-rose-700" role="alert">{authError}</p>}
-              </form>
-            )}
-
-            {/* Tab 3: Forgot Password */}
-            {authView === 'forgot' && (
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                <p className="text-xs text-slate-600">
-                  Enter your registered seller email or WhatsApp number. A one-time verification token (OTP) will be dispatched instantly.
-                </p>
-                <input
-                  type="text"
-                  placeholder="Enter your registered seller email"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-emerald-600"
-                />
-                <button
-                  onClick={() => {
-                    showToast('OTP sent to registered phone/email. Check messages.');
-                    setAuthView('login');
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition cursor-pointer"
-                >
-                  Send OTP Reset Token
-                </button>
-              </div>
-            )}
+              <p className="text-center text-[10px] leading-relaxed text-slate-500">
+                Need to join the seller network? Contact the collaboration team from the public website. Never share your password or OTP.
+              </p>
+            </div>
           </div>
         ) : (
           /* ======================================================== */

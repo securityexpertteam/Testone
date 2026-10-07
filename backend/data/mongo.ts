@@ -235,7 +235,7 @@ export const connectMongo = async (): Promise<Db> => {
   // Create the application collections during startup, including ledgers that
   // may be empty on a new installation. createCollection is idempotent here.
   const collectionNames = [
-    'users', 'sellers', 'seller_portal', 'products', 'orders', 'payments',
+    'users', 'sellers', 'seller_portal', 'admins', 'admin_audit', 'products', 'orders', 'payments',
     'donations', 'raffle_campaigns', 'raffle_tickets', 'raffle_draws',
     'raffle_sequences', 'carts', 'catalog_backup_queue'
   ];
@@ -260,6 +260,7 @@ export const connectMongo = async (): Promise<Db> => {
   await Promise.all([
     database.collection('users').createIndex({ loginId: 1 }, { unique: true }),
     database.collection('sellers').createIndex({ email: 1 }, { unique: true }),
+    database.collection('admins').createIndex({ username: 1 }, { unique: true }),
     database.collection('seller_portal').createIndex({ sellerId: 1 }, { unique: true }),
     database.collection('products').createIndex({ id: 1 }, { unique: true }),
     database.collection('products').createIndex({ sellerId: 1, sku: 1 }, { unique: true }),

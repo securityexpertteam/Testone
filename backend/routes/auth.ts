@@ -23,7 +23,26 @@ interface SellerAccount extends Document {
   sellerName: string;
   phone: string;
   gstin: string;
+  status?: 'PENDING_REVIEW' | 'APPROVED' | 'SUSPENDED';
+  approvedAt?: Date;
+  approvedBy?: string;
+  suspendedAt?: Date;
+  createdAt?: Date;
 }
+
+const requireSellerAdminKey = (req: Request, res: Response, next: NextFunction) => {
+  const configuredKey = process.env.SELLER_ADMIN_KEY || '';
+  const suppliedKey = req.header('x-seller-admin-key') || '';
+  if (configuredKey.length < 32) {
+    return res.status(503).json({ success: false, message: 'Seller administration is not configured' });
+  }
+  const configured = Buffer.from(configuredKey);
+  const supplied = Buffer.from(suppliedKey);
+  if (configured.length !== supplied.length || !timingSafeEqual(configured, supplied)) {
+    return res.status(403).json({ success: false, message: 'Seller administrator access is required' });
+  }
+  return next();
+};
 
 const getUsers = (): Collection<CustomerUser> => getMongoDb().collection<CustomerUser>('users');
 const getSellers = (): Collection<SellerAccount> => getMongoDb().collection<SellerAccount>('sellers');
@@ -204,16 +223,19 @@ export const requireCustomerSession = (req: Request, res: Response, next: NextFu
   }
 };
 
-// POST /api/auth/seller/register
-authRouter.post('/seller/register', async (req: Request, res: Response) => {
+authRouter.post('/seller/register', (_req: Request, res: Response) =>
+  res.status(403).json({ success: false, message: 'Seller accounts are invitation-only. Contact the collaboration team.' })
+);
+
+authRouter.post('/admin/sellers', requireSellerAdminKey, async (req: Request, res: Response) => {
   const storeName = typeof req.body.storeName === 'string' ? req.body.storeName.trim() : '';
   const sellerName = typeof req.body.sellerName === 'string' ? req.body.sellerName.trim() : '';
   const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const gstin = typeof req.body.gstin === 'string' ? req.body.gstin.trim() : '';
-  if (!storeName || !email || password.length < 8) {
-    return res.status(400).json({ success: false, message: 'Store name, valid email, and an 8-character password are required' });
+  if (!storeName || !sellerName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) {
+    return res.status(400).json({ success: false, message: 'Store name, representative, valid email, and a password of at least 12 characters are required' });
   }
 
   try {
@@ -228,19 +250,56 @@ authRouter.post('/seller/register', async (req: Request, res: Response) => {
       storeName,
       sellerName,
       phone,
-      gstin: gstin || 'PENDING_VERIFICATION'
-    } as SellerAccount;
+      gstin: gstin || 'PENDING_VERIFICATION',
+      status: 'PENDING_REVIEW',
+      createdAt: new Date()
+    };
     await sellers.insertOne(seller);
-    const token = createSellerToken(seller);
     return res.status(201).json({
       success: true,
-      message: 'Seller registered successfully',
-      token,
-      seller: { sellerId: seller.sellerId, storeName, sellerName, email, phone, gstin: seller.gstin }
+      message: 'Seller account created and awaiting review',
+      seller: { sellerId: seller.sellerId, storeName, sellerName, email, phone, gstin: seller.gstin, status: seller.status }
     });
   } catch (error) {
-    console.error('Unable to register seller', error);
-    return res.status(503).json({ success: false, message: 'Seller registration is unavailable' });
+    console.error('Unable to provision seller account', error);
+    return res.status(503).json({ success: false, message: 'Seller account could not be provisioned' });
+  }
+});
+
+authRouter.get('/admin/sellers', requireSellerAdminKey, async (_req: Request, res: Response) => {
+  try {
+    const sellers = await getSellers().find(
+      {},
+      { projection: { _id: 0, email: 1, sellerId: 1, storeName: 1, sellerName: 1, phone: 1, gstin: 1, status: 1, approvedAt: 1, suspendedAt: 1, createdAt: 1 } }
+    ).sort({ storeName: 1 }).toArray();
+    return res.json({
+      success: true,
+      sellers: sellers.map(({ email, sellerId, storeName, sellerName, phone, gstin, status, approvedAt, suspendedAt }) => ({
+        email, sellerId, storeName, sellerName, phone, gstin, status: status || 'PENDING_REVIEW', approvedAt, suspendedAt
+      }))
+    });
+  } catch (error) {
+    console.error('Unable to load seller administration records', error);
+    return res.status(503).json({ success: false, message: 'Seller records could not be loaded' });
+  }
+});
+
+authRouter.patch('/admin/sellers/:sellerId/status', requireSellerAdminKey, async (req: Request, res: Response) => {
+  const status = req.body.status;
+  if (status !== 'APPROVED' && status !== 'SUSPENDED') {
+    return res.status(400).json({ success: false, message: 'Status must be APPROVED or SUSPENDED' });
+  }
+  try {
+    const now = new Date();
+    const update = status === 'APPROVED'
+      ? { $set: { status, approvedAt: now, approvedBy: 'seller-admin', updatedAt: now } }
+      : { $set: { status, suspendedAt: now, updatedAt: now } };
+    const result = await getSellers().updateOne({ sellerId: req.params.sellerId }, update);
+    if (!result.matchedCount) return res.status(404).json({ success: false, message: 'Seller account was not found' });
+    return res.json({ success: true, sellerId: req.params.sellerId, status });
+  } catch (error) {
+    console.error('Unable to update seller approval status', error);
+    return res.status(503).json({ success: false, message: 'Seller approval status could not be updated' });
   }
 });
 
@@ -258,6 +317,9 @@ authRouter.post('/seller/login', async (req: Request, res: Response) => {
 
     if (!seller || !verifySellerPassword(password, seller.passwordHash)) {
       return res.status(401).json({ success: false, message: 'Invalid seller email or password' });
+    }
+    if (seller.status !== 'APPROVED') {
+      return res.status(403).json({ success: false, message: 'Seller access is not approved. Contact the collaboration team.' });
     }
     const token = createSellerToken(seller);
     return res.json({
@@ -280,7 +342,7 @@ authRouter.post('/seller/login', async (req: Request, res: Response) => {
   }
 });
 
-export const requireSellerSession = (req: Request, res: Response, next: NextFunction) => {
+export const requireSellerSession = async (req: Request, res: Response, next: NextFunction) => {
   const authorization = req.header('authorization') || '';
   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
   if (!token) return res.status(401).json({ success: false, message: 'Seller login is required' });
@@ -296,9 +358,18 @@ export const requireSellerSession = (req: Request, res: Response, next: NextFunc
     }
     res.locals.sellerLoginId = payload.sub;
     res.locals.sellerId = payload.sellerId;
+    const seller = await getSellers().findOne({ sellerId: payload.sellerId, email: payload.sub, status: 'APPROVED' });
+    if (!seller) return res.status(401).json({ success: false, message: 'Seller access is no longer approved' });
     return next();
-  } catch {
-    return res.status(401).json({ success: false, message: 'Seller session expired or is invalid' });
+  } catch (error) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ success: false, message: 'Seller session expired or is invalid' });
+    }
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Seller session expired or is invalid' });
+    }
+    console.error('Unable to verify seller approval', error);
+    return res.status(503).json({ success: false, message: 'Seller authorization is unavailable' });
   }
 };
 

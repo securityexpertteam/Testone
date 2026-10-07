@@ -15,12 +15,13 @@ import { CartDrawer } from './components/CartDrawer';
 import { WhatsAppOrderModal } from './components/WhatsAppOrderModal';
 import { OrderBookingModal } from './components/OrderBookingModal';
 import { RaffleAuditModal } from './components/RaffleAuditModal';
-import { SellerPortalModal } from './components/SellerPortalModal';
+import { SellerCollaborationModal } from './components/SellerCollaborationModal';
+import { AdminPortal } from './components/AdminPortal';
 import { Footer } from './components/Footer';
 import { API_BASE_URL } from './utils/api';
 import { getReferralId } from './utils/referral';
 
-export default function App() {
+function PublicApp() {
   useEffect(() => {
     getReferralId();
   }, []);
@@ -66,7 +67,7 @@ export default function App() {
 
   const [isOrderBookingOpen, setIsOrderBookingOpen] = useState(false);
   const [isRaffleAuditOpen, setIsRaffleAuditOpen] = useState(false);
-  const [isSellerPortalOpen, setIsSellerPortalOpen] = useState(false);
+  const [isSellerCollaborationOpen, setIsSellerCollaborationOpen] = useState(false);
 
   // Success toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -313,7 +314,7 @@ export default function App() {
           setIsDonateOpen(true);
         }}
         onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
-        onOpenSellerPortal={() => setIsSellerPortalOpen(true)}
+        onOpenSellerPortal={() => setIsSellerCollaborationOpen(true)}
         onNavigate={handleNavigate}
       />
 
@@ -357,9 +358,9 @@ export default function App() {
         onClose={() => setIsRaffleAuditOpen(false)}
       />
 
-      <SellerPortalModal
-        isOpen={isSellerPortalOpen}
-        onClose={() => setIsSellerPortalOpen(false)}
+      <SellerCollaborationModal
+        isOpen={isSellerCollaborationOpen}
+        onClose={() => setIsSellerCollaborationOpen(false)}
       />
 
       {/* Direct Donation Modal with 80G Certificate Generation */}
@@ -427,4 +428,10 @@ export default function App() {
 
     </div>
   );
+}
+
+export default function App() {
+  return window.location.pathname.replace(/\/+$/, '') === '/godadmin'
+    ? <AdminPortal />
+    : <PublicApp />;
 }

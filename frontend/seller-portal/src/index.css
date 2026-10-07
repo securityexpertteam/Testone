@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@source "../../src";
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f2f9f6;
+  font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+}

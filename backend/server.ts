@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { ordersRouter } from './routes/orders.js';
 import { raffleRouter } from './routes/raffle.js';
 import { authRouter } from './routes/auth.js';
+import { adminRouter } from './routes/admin.js';
 import { sellerRouter } from './routes/seller.js';
 import { cartsRouter } from './routes/carts.js';
 import { catalogRouter } from './routes/catalog.js';
@@ -35,6 +36,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/orders', ordersRouter);
 app.use('/api/raffle', raffleRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/seller', sellerRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/api', catalogRouter);

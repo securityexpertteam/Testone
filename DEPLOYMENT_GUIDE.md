@@ -1,9 +1,10 @@
 # Render Deployment Guide
 
-This repository deploys as two Render services from the root `render.yaml` Blueprint:
+This repository deploys as three Render services from the root `render.yaml` Blueprint:
 
 - **`akshaya-patra-backend`** — Node/Express API backed by MongoDB.
-- **`akshaya-patra-frontend`** — Vite/React static site. Its API URL is connected to the backend service by the Blueprint.
+- **`akshaya-patra-frontend`** — public Vite/React static site. The Seller Login footer entry opens collaboration contact information only.
+- **`akshaya-patra-seller-portal`** — separate Vite/React seller workspace. It uses the same backend API and MongoDB, but seller accounts must be explicitly approved.
 
 ## Before you deploy
 
@@ -21,9 +22,9 @@ Do not copy real secrets into this guide or commit either `.env` file. Use the e
 ## Create the Render services
 
 1. Push the project to your Git provider and open the repository in the Render Dashboard.
-2. Choose **New → Blueprint** and select the repository. Render will read `render.yaml` and prepare both services.
+2. Choose **New → Blueprint** and select the repository. Render will read `render.yaml` and prepare the backend, public site, and separate seller portal.
 3. Enter the requested values for every `sync: false` variable listed below. Set them in Render’s environment variable form; do not add quote characters around values.
-4. Confirm the Blueprint creates both services, then deploy.
+4. Confirm the Blueprint creates all three services, then deploy.
 
 The Blueprint configures each service’s root directory and build/start commands. The backend health check is `/api/health`. The frontend includes a rewrite to `index.html` for client-side routes.
 
@@ -38,6 +39,16 @@ Set these on the **`akshaya-patra-backend`** service:
 | `MONGODB_BACKUP_URI` | Recommended | URI for the independent MongoDB deployment that mirrors application collections. It must not resolve to the primary deployment. |
 | `MONGODB_BACKUP_DB` | No | Backup database name. Blueprint default: `akshaya_patra_backup`. |
 | `JWT_SECRET` | Yes for authenticated seller flows | Keep private and use at least 32 characters. |
+| `SELLER_ADMIN_KEY` | Yes for seller account administration | A separate random secret of at least 32 characters. Keep it only in the backend environment and trusted admin tooling. Never put it in either frontend environment. |
+| `ADMIN_USERNAME` | Yes for admin console | Initial admin login name, stored/configured only on the backend. |
+| `ADMIN_INITIAL_PASSWORD` | Yes for first admin login | Bootstrap password of at least 12 characters; first sign-in forces a change to a 14+ character password. It is not used to overwrite an already initialized admin account. |
+| `ADMIN_EMAIL` | Yes for admin recovery | Registered email used to validate recovery and receive production OTP. |
+| `ADMIN_MOBILE` | Yes for admin recovery | Registered mobile number in international format, e.g. `+91...`; used for recovery validation and SMS OTP delivery. |
+| `ADMIN_RESET_CODE` | Yes for admin recovery | Independent random secret of at least 32 characters. Keep only in backend environment; it is required in addition to the OTP. |
+| `ADMIN_OTP_MODE` | Optional | Set to `development` only for local/temporary testing; this returns the reset OTP visibly in the admin UI. Never set this in production. Otherwise both email and SMS delivery must be configured. |
+| `ADMIN_SMS_ACCOUNT_SID` | Production admin recovery | Twilio account SID. Keep private. |
+| `ADMIN_SMS_AUTH_TOKEN` | Production admin recovery | Twilio auth token. Keep private. |
+| `ADMIN_SMS_FROM` | Production admin recovery | Twilio sender number in international format. |
 | `OTP_HASH_SECRET` | Yes for OTP and pickup-claim flows | Keep private and use a strong random value. |
 | `OTP_DELIVERY_MODE` | Yes to choose delivery behavior | Set to `development` only for temporary testing; the generated OTP is returned to the public frontend. Set to `smtp` when email delivery is ready. If unset, production defaults to SMTP. |
 | `SMTP_HOST` | For email delivery | SMTP server hostname. |
@@ -54,6 +65,31 @@ The API creates its application collections and indexes when it connects to the 
 The mirror includes customer, seller, order, donation, payment, and raffle records, including personal data. Restrict access to the backup deployment and its credentials.
 
 Email delivery requires all of `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`. Without them, OTP email and pickup-availability messages cannot be sent.
+
+### Seller governance and access
+
+Public seller self-registration is disabled. The public site links to a collaboration information dialog; the seller workspace is deployed separately as `akshaya-patra-seller-portal` and accepts only accounts with `status: "APPROVED"`. Existing seller records without this status cannot log in until they have been reviewed and explicitly approved. Suspending an account revokes seller API access on the next request, including for an already-issued session token.
+
+Set `SELLER_ADMIN_KEY` on the backend to a unique random value of at least 32 characters. Trusted staff can use the backend-only administration API over HTTPS:
+
+- `POST /api/auth/admin/sellers` with `X-Seller-Admin-Key` and JSON fields `storeName`, `sellerName`, `email`, `phone`, optional `gstin`, and a one-time password of at least 12 characters creates an account in `PENDING_REVIEW`. Deliver initial credentials through a verified, private channel.
+- `GET /api/auth/admin/sellers` with `X-Seller-Admin-Key` lists account IDs and approval status without returning password hashes.
+- `PATCH /api/auth/admin/sellers/:sellerId/status` with the same header and `{ "status": "APPROVED" }` or `{ "status": "SUSPENDED" }` updates an existing seller's access after review. Newly provisioned and legacy accounts must be explicitly approved after due diligence.
+- `POST /api/auth/seller/register` is retained only as a compatibility response and rejects registration.
+
+Do not place `SELLER_ADMIN_KEY` in browser code, static-site settings, URLs, or support messages. If the key is exposed, rotate it in the backend environment and redeploy the backend. Apply the seller-portal static service from the Blueprint; the Render dashboard will show its separate URL. The public site intentionally does not expose a direct seller login link.
+
+Before re-enabling access for existing records, have staff review the organisation, representative identity, product provenance, and payout ownership, then explicitly approve only verified accounts. Do not bulk-approve accounts based only on their prior existence.
+
+### Administrator console
+
+The main public application serves the hidden route `https://<public-site>/godadmin`; there is no public navigation link to it. The console authenticates only against the backend and reads/writes the existing MongoDB deployment. On its first successful login, it requires changing the environment-provided bootstrap password. Keep `ADMIN_INITIAL_PASSWORD`, `ADMIN_RESET_CODE`, and all admin/SMS credentials exclusively on the backend.
+
+Recovery requires the configured username, email, mobile, `ADMIN_RESET_CODE`, and a short-lived OTP delivered by both SMTP and Twilio SMS. `ADMIN_OTP_MODE=development` bypasses delivery and shows the OTP in the console, so it is strictly for local/temporary testing and must not be set on a live Render service. Seller approval/suspension is recorded in `admin_audit`; seller notification email is sent when SMTP is configured. Status changes still take effect if email delivery fails, and the console reports that failure.
+
+The admin console has sections for portfolio overview, seller management, order register, finance/margins, donors, sales channels, vendor/catalog, operations/stock, trends/performance, and governance audit. It includes monthly revenue/contribution charts, payment reconciliation, seller performance, low-stock and ticket queues, referral/payment-method revenue, donation-by-cause summaries, and CSV exports. Portfolio figures use saved orders, payments, order-linked donation records, seller accounts, products, and raffle campaigns. Collected order revenue counts only `PAID`/`SUCCESS`; pay-on-delivery confirmations remain visible as their own payment status, not cash collected.
+
+The finance section is explicitly not a net-profit or audited accounting report: seller settlements, operating costs, refunds, historical cost snapshots, and bank reconciliations are not persisted. Current stock cost value and listed catalog margins are labeled as estimates. Direct donation form entries are currently stored client-side and are not included in this backend report. The current schema has no standalone sponsor CRM or independent marketing-channel field, so the donor register is not a verified sponsor directory and channel reporting is limited to saved payment methods and `refid` referral attribution.
 
 **Temporary OTP testing:** On the backend Render service, set `OTP_DELIVERY_MODE` to `development`, then redeploy the backend. With MongoDB and `OTP_HASH_SECRET` configured, the OTP appears in the checkout UI and API response, so anyone who can access the public site can see an OTP they request. Do not leave this enabled on a live service. When testing is complete, configure SMTP, set `OTP_DELIVERY_MODE` to `smtp` (or remove it), and redeploy.
 

@@ -125,7 +125,7 @@ export const Footer: React.FC<FooterProps> = ({
                   className="text-emerald-700 hover:text-emerald-900 transition cursor-pointer text-left flex items-center gap-1.5 font-bold"
                 >
                   <Store className="w-3.5 h-3.5" />
-                  <span>Seller Login & Portal</span>
+                  <span>Seller & Artisan Collaborations</span>
                 </button>
               </li>
             </ul>

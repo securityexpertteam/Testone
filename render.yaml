@@ -1,5 +1,5 @@
 # Render Blueprint specification for Akshaya Patra Welfare
-# Supports deploying both as separate services (Frontend + Backend) or unified full-stack
+# Deploys the API, public site, and independent seller portal as separate services.
 
 services:
   # ==========================================
@@ -30,6 +30,26 @@ services:
       - key: OTP_DELIVERY_MODE
         sync: false
       - key: JWT_SECRET
+        sync: false
+      - key: SELLER_ADMIN_KEY
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_MOBILE
+        sync: false
+      - key: ADMIN_RESET_CODE
+        sync: false
+      - key: ADMIN_OTP_MODE
+        sync: false
+      - key: ADMIN_SMS_ACCOUNT_SID
+        sync: false
+      - key: ADMIN_SMS_AUTH_TOKEN
+        sync: false
+      - key: ADMIN_SMS_FROM
         sync: false
       - key: SMTP_HOST
         sync: false
@@ -99,3 +119,24 @@ services:
         sync: false
       - key: VITE_ORG_80G_ORDER_NUMBER
         sync: false
+
+  # ==========================================
+  # 3. PRIVATE SELLER WORKSPACE (Vite / React)
+  # ==========================================
+  - type: web
+    name: akshaya-patra-seller-portal
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build:seller-portal
+    staticPublishPath: ./seller-portal/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: akshaya-patra-backend
+          property: host
