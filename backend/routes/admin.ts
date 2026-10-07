@@ -237,10 +237,20 @@ adminRouter.post('/password/change', requireAdminSession, async (req: Request, r
   const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
   const admin = res.locals.admin as AdminAccount;
   if (newPassword.length < 14) return res.status(400).json({ success: false, message: 'Use a new password of at least 14 characters' });
-  if (!verifyPassword(currentPassword, admin.passwordHash)) {
-    return res.status(403).json({ success: false, message: 'Current password is incorrect' });
+  const configuredBootstrapPassword = getConfiguredAdmin().initialPassword;
+  const matchesStoredPassword = verifyPassword(currentPassword, admin.passwordHash);
+  const matchesBootstrapPassword = admin.mustChangePassword &&
+    configuredBootstrapPassword.length >= 12 &&
+    secureEqual(configuredBootstrapPassword, currentPassword);
+  if (!matchesStoredPassword && !matchesBootstrapPassword) {
+    return res.status(403).json({
+      success: false,
+      message: admin.mustChangePassword
+        ? 'Current password does not match the initialized account or configured bootstrap password'
+        : 'Current password is incorrect'
+    });
   }
-  if (verifyPassword(newPassword, admin.passwordHash)) {
+  if (verifyPassword(newPassword, admin.passwordHash) || secureEqual(newPassword, currentPassword)) {
     return res.status(400).json({ success: false, message: 'Choose a password different from the current password' });
   }
   try {
