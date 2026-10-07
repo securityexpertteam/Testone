@@ -424,6 +424,67 @@ export const AdminPortal: React.FC = () => {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {metricCards.map(card => { const Icon = card.icon; return <article key={card.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between"><span className="text-xs font-semibold text-slate-500">{card.title}</span><span className={`rounded-xl p-2 ${card.color}`}><Icon className="h-4 w-4" /></span></div><p className="mt-2 text-2xl font-black tracking-tight">{card.value}</p><p className="mt-1 text-[11px] text-slate-500">{card.hint}</p></article>; })}
             </div>
+            <Panel
+              title="Donations & welfare contributions"
+              subtitle="A portfolio snapshot of paid, order-linked contributions saved in the donation ledger."
+              action={<button onClick={() => setSection('donations')} className="whitespace-nowrap text-xs font-bold text-emerald-800 hover:text-emerald-950">Open donation register →</button>}
+            >
+              <div className="grid gap-5 lg:grid-cols-[0.8fr_1fr_1.4fr]">
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+                  <div className="rounded-xl bg-rose-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">Paid contributions</p>
+                    <p className="mt-1 text-xl font-black text-slate-950">{Number(dashboard.metrics.donations.donations || 0).toLocaleString('en-IN')}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-500">Successful donation records</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Recorded total</p>
+                    <p className="mt-1 text-xl font-black text-slate-950">{formatCurrency(dashboard.metrics.donations.revenue)}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-500">Paid / successful only</p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Contribution by cause</p>
+                  {dashboard.donationCauses.length ? (
+                    <div className="space-y-3">
+                      {dashboard.donationCauses.slice(0, 4).map(cause => (
+                        <MetricLine
+                          key={cause._id}
+                          label={`${cause._id} · ${cause.contributions}`}
+                          value={cause.revenue}
+                          max={Math.max(...dashboard.donationCauses.map(item => Number(item.revenue || 0)), 1)}
+                          color="bg-rose-500"
+                        />
+                      ))}
+                    </div>
+                  ) : <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No paid contributions are recorded yet.</p>}
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Recent contribution activity</p>
+                    <span className="text-[10px] text-slate-400">Latest saved records</span>
+                  </div>
+                  {dashboard.donations.length ? (
+                    <div className="divide-y divide-slate-100">
+                      {dashboard.donations.slice(0, 4).map((donation, index) => (
+                        <div key={stringValue(donation.donationId, String(index))} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-800">{stringValue(donation.donorName, 'Contributor')}</p>
+                            <p className="mt-0.5 truncate text-[10px] text-slate-500">{stringValue(donation.cause, 'Unspecified cause')} · {dateValue(donation.recordedAt)}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-xs font-black text-slate-900">{formatCurrency(donation.amount)}</p>
+                            <StatusBadge value={stringValue(donation.paymentStatus, 'Unknown')} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No donation records are available.</p>}
+                </div>
+              </div>
+              <p className="mt-4 border-t border-slate-100 pt-3 text-[10px] leading-relaxed text-slate-400">
+                Scope: order-linked contributions only. Direct donation form submissions and sponsor records are not currently stored in the backend ledger.
+              </p>
+            </Panel>
             <div className="grid gap-4 xl:grid-cols-2">
               <Panel title="Seller onboarding pipeline" subtitle="Only explicitly approved accounts can sign in.">
                 <div className="grid grid-cols-3 gap-2 text-center">{[
@@ -449,12 +510,12 @@ export const AdminPortal: React.FC = () => {
 
           {dashboard && section === 'sellers' && <Panel title="Seller review queue" subtitle="Approving an account immediately enables the separate seller portal; suspension revokes active API sessions.">
             <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950"><strong>Review checklist:</strong> verify representative identity, organization registration, product provenance, and payout ownership. Existing accounts without APPROVED status remain unable to sign in.</div>
-            <DataTable headers={['Seller / representative', 'Contact', 'Organization', 'Status', 'Review']} rows={dashboard.sellers} render={(seller, index) => <tr key={stringValue(seller.sellerId, String(index))} className="border-b border-slate-100 align-top last:border-0">
+            <DataTable headers={['Seller / representative', 'Contact', 'Organization', 'Status', 'Review']} rows={dashboard.sellers} render={(seller, index) => <tr key={stringValue(seller.sellerId, String(index))} className="border-b border-slate-100 align-middle last:border-0">
               <td className="py-3"><strong>{stringValue(seller.storeName)}</strong><span className="mt-1 block text-slate-500">{stringValue(seller.sellerName)}</span><span className="mt-1 block font-mono text-[10px] text-slate-400">{stringValue(seller.sellerId)}</span></td>
               <td>{stringValue(seller.email)}<span className="mt-1 block text-slate-500">{stringValue(seller.phone)}</span></td>
               <td>{stringValue(seller.gstin, 'Registration pending')}</td>
-              <td><StatusBadge value={stringValue(seller.status, 'PENDING_REVIEW')} /></td>
-              <td><div className="flex min-w-[160px] gap-1.5"><button disabled={busy || seller.status === 'APPROVED'} onClick={() => void updateSellerStatus(stringValue(seller.sellerId), 'APPROVED')} className="rounded-lg bg-emerald-800 px-2.5 py-2 text-[10px] font-bold text-white disabled:opacity-40">Approve</button><button disabled={busy || seller.status === 'SUSPENDED'} onClick={() => void updateSellerStatus(stringValue(seller.sellerId), 'SUSPENDED')} className="rounded-lg border border-rose-200 px-2.5 py-2 text-[10px] font-bold text-rose-700 disabled:opacity-40">Suspend</button></div></td>
+              <td className="py-3 align-middle"><StatusBadge value={stringValue(seller.status, 'PENDING_REVIEW')} /></td>
+              <td className="py-3 align-middle"><div className="flex min-w-[160px] items-center gap-1.5"><button disabled={busy || seller.status === 'APPROVED'} onClick={() => void updateSellerStatus(stringValue(seller.sellerId), 'APPROVED')} className="rounded-lg bg-emerald-800 px-2.5 py-2 text-[10px] font-bold text-white disabled:opacity-40">Approve</button><button disabled={busy || seller.status === 'SUSPENDED'} onClick={() => void updateSellerStatus(stringValue(seller.sellerId), 'SUSPENDED')} className="rounded-lg border border-rose-200 px-2.5 py-2 text-[10px] font-bold text-rose-700 disabled:opacity-40">Suspend</button></div></td>
             </tr>} empty="No seller accounts have been provisioned." />
           </Panel>}
 
