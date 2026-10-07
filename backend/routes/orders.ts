@@ -15,6 +15,46 @@ const normalizeReferralId = (value: unknown): string => {
   return referralIds.has(referralId) ? referralId : 'subhash';
 };
 
+ordersRouter.get('/referral-summary', requireSellerSession, async (_req: Request, res: Response) => {
+  try {
+    const summaries = await getMongoDb().collection('orders').aggregate<{
+      _id: string;
+      orderCount: number;
+      totalRevenue: number;
+    }>([
+      { $match: { 'orderMetadata.sellerId': res.locals.sellerId } },
+      {
+        $group: {
+          _id: { $ifNull: ['$refid', 'subhash'] },
+          orderCount: { $sum: 1 },
+          totalRevenue: {
+            $sum: {
+              $convert: {
+                input: { $ifNull: ['$orderMetadata.finalPayableAmount', '$orderMetadata.totalAmount'] },
+                to: 'double',
+                onError: 0,
+                onNull: 0
+              }
+            }
+          }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+
+    const summaryByReferral = new Map(summaries.map(summary => [summary._id, summary]));
+    const referralSummaries = ['subhash', 'srini', 'kumar'].map(refid => ({
+      refid,
+      orderCount: summaryByReferral.get(refid)?.orderCount || 0,
+      totalRevenue: summaryByReferral.get(refid)?.totalRevenue || 0
+    }));
+    return res.json({ success: true, summaries: referralSummaries });
+  } catch (error) {
+    console.error('Unable to load referral order summary', error);
+    return res.status(503).json({ success: false, message: 'Referral order summary is unavailable' });
+  }
+});
+
 ordersRouter.get('/', requireSellerSession, async (_req: Request, res: Response) => {
   try {
     const orders = await getMongoDb().collection('orders')

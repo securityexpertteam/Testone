@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   X, Store, Lock, ArrowRight, ShieldCheck, Mail, Key, Package, Truck, Heart,
   LogOut, CheckCircle2, Check, MapPin, RefreshCw, Plus, Edit2,
@@ -17,6 +17,12 @@ import { displayValue, organization } from '../config/organization';
 interface SellerPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface ReferralSummary {
+  refid: string;
+  orderCount: number;
+  totalRevenue: number;
 }
 
 type SellerTab = 
@@ -61,6 +67,9 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
   // Data state
   const [products, setProducts] = useState<SellerProductItem[]>([]);
   const [orders, setOrders] = useState<SellerOrderItem[]>([]);
+  const [referralSummaries, setReferralSummaries] = useState<ReferralSummary[]>([]);
+  const [referralSummaryError, setReferralSummaryError] = useState('');
+  const [isLoadingReferralSummary, setIsLoadingReferralSummary] = useState(false);
   const [pickupCodes, setPickupCodes] = useState<Record<string, string>>({});
   const [inventoryLogs, setInventoryLogs] = useState<InventoryLog[]>([]);
   const [payouts, setPayouts] = useState<Record<string, unknown>[]>([]);
@@ -94,6 +103,30 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
 
   // Notifications
   const [notifications, setNotifications] = useState<Record<string, any>[]>([]);
+
+  useEffect(() => {
+    if (activeTab !== 'analytics' || !jwtToken) return;
+    let active = true;
+    setIsLoadingReferralSummary(true);
+    setReferralSummaryError('');
+    fetch(`${API_BASE_URL}/orders/referral-summary`, {
+      headers: { Authorization: `****** }
+    })
+      .then(async response => {
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Referral summary could not be loaded');
+        }
+        if (active) setReferralSummaries(result.summaries || []);
+      })
+      .catch(error => {
+        if (active) setReferralSummaryError(error instanceof Error ? error.message : 'Referral summary could not be loaded');
+      })
+      .finally(() => {
+        if (active) setIsLoadingReferralSummary(false);
+      });
+    return () => { active = false; };
+  }, [activeTab, jwtToken]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -1277,6 +1310,37 @@ export const SellerPortalModal: React.FC<SellerPortalModalProps> = ({ isOpen, on
                       <p className="text-[10px] text-slate-500">Cancellation Rate</p>
                       <p className="text-lg font-bold text-emerald-700">{cancellationRate.toFixed(1)}%</p>
                     </div>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
+                    <div>
+                      <h5 className="font-bold text-xs uppercase text-slate-500 tracking-wider">Orders by Referral</h5>
+                      <p className="text-xs text-slate-500 mt-1">Order count and gross order revenue by referral ID.</p>
+                    </div>
+                    {isLoadingReferralSummary && <p className="text-xs text-slate-500">Loading referral summary...</p>}
+                    {referralSummaryError && <p className="text-xs text-rose-700" role="alert">{referralSummaryError}</p>}
+                    {!isLoadingReferralSummary && !referralSummaryError && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-500">
+                              <th className="py-2 font-semibold">Referral ID</th>
+                              <th className="py-2 text-right font-semibold">Orders</th>
+                              <th className="py-2 text-right font-semibold">Revenue</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {referralSummaries.map(summary => (
+                              <tr key={summary.refid} className="border-b border-slate-50 last:border-0">
+                                <td className="py-2 font-semibold text-slate-800">{summary.refid}</td>
+                                <td className="py-2 text-right">{summary.orderCount.toLocaleString('en-IN')}</td>
+                                <td className="py-2 text-right font-semibold">₹{summary.totalRevenue.toLocaleString('en-IN')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
                   {/* Revenue by Category visual bar */}

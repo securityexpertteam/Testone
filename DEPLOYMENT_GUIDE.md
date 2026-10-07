@@ -71,6 +71,8 @@ Use the exact variable names from [`frontend/.env.example`](frontend/.env.exampl
 
 If an organization value changes in Render, redeploy the frontend so the new value is included in the static build.
 
+Referral sales are available only to an authenticated seller. `GET /api/orders/referral-summary` requires an active seller login session and returns order counts and gross revenue grouped by referral ID for that seller. The Seller Portal displays this report in **Analytics**; orders without a stored referral ID are counted under `subhash`.
+
 ## Verify the deployment
 
 1. Open the backend service’s `/api/health` URL. It should return JSON with `"status":"healthy"`.
