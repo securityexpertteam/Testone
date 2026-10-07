@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { HYDERABAD_COMMUNITIES, HYDERABAD_NODAL_POINTS } from '../data/hyderabadLocations';
 import { API_BASE_URL } from '../utils/api';
+import { getReferralId } from '../utils/referral';
 import { 
   X, 
   CheckCircle2, 
@@ -261,6 +262,7 @@ export const OrderBookingModal: React.FC<OrderBookingModalProps> = ({
       : selectedCommunity;
 
     const fullOrder: OrderBooking = {
+      refid: getReferralId(),
       customerDetails: {
         fullName,
         email,

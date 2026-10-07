@@ -18,8 +18,13 @@ import { RaffleAuditModal } from './components/RaffleAuditModal';
 import { SellerPortalModal } from './components/SellerPortalModal';
 import { Footer } from './components/Footer';
 import { API_BASE_URL } from './utils/api';
+import { getReferralId } from './utils/referral';
 
 export default function App() {
+  useEffect(() => {
+    getReferralId();
+  }, []);
+
   // Navigation & Modals State
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [selectedCauseForDonate, setSelectedCauseForDonate] = useState<CharityCause | null>(null);

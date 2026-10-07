@@ -101,6 +101,7 @@ export interface RaffleTransactionRecord {
 }
 
 export interface OrderBooking {
+  refid?: string;
   customerDetails: CustomerDetails;
   deliveryAddress: DeliveryAddressDetails;
   orderDetails: OrderItemDetail[];

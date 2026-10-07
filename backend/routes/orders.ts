@@ -7,6 +7,14 @@ import { requireCustomerSession, requireSellerSession } from './auth.js';
 
 export const ordersRouter = Router();
 
+const referralIds = new Set(['subhash', 'srini', 'kumar']);
+
+const normalizeReferralId = (value: unknown): string => {
+  if (typeof value !== 'string') return 'subhash';
+  const referralId = value.trim().toLowerCase();
+  return referralIds.has(referralId) ? referralId : 'subhash';
+};
+
 ordersRouter.get('/', requireSellerSession, async (_req: Request, res: Response) => {
   try {
     const orders = await getMongoDb().collection('orders')
@@ -72,6 +80,7 @@ ordersRouter.post('/', requireCustomerSession, async (req: Request, res: Respons
     const transactionId = orderData.payment?.transactionId || `TXN-${randomUUID().slice(0, 16).toUpperCase()}`;
     const confirmedOrder: OrderBooking & { buyerId: string; status: string } = {
       ...orderData,
+      refid: normalizeReferralId(orderData.refid),
       customerDetails: { ...orderData.customerDetails, email: loginId },
       orderDetails: product ? [{
         productId: product.id,
