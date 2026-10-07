@@ -78,8 +78,9 @@ ordersRouter.post('/', requireCustomerSession, async (req: Request, res: Respons
     const orderId = `APW-${new Date().getFullYear()}-${randomUUID().slice(0, 12).toUpperCase()}`;
     const now = new Date();
     const transactionId = orderData.payment?.transactionId || `TXN-${randomUUID().slice(0, 16).toUpperCase()}`;
-    const confirmedOrder: OrderBooking & { buyerId: string; status: string } = {
+    const confirmedOrder: OrderBooking & { orderId: string; buyerId: string; status: string } = {
       ...orderData,
+      orderId,
       refid: normalizeReferralId(orderData.refid),
       customerDetails: { ...orderData.customerDetails, email: loginId },
       orderDetails: product ? [{
