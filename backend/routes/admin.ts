@@ -374,7 +374,13 @@ adminRouter.post('/recovery/complete', async (req: Request, res: Response) => {
       { username: payload.username, tokenVersion: payload.tokenVersion },
       {
         $set: { passwordHash: hashPassword(newPassword), mustChangePassword: false, tokenVersion, passwordChangedAt: new Date() },
-        $unset: { resetOtpHash: '', resetOtpExpiresAt: '', resetOtpAttempts: '' }
+        $unset: {
+          resetOtpHash: '',
+          resetOtpExpiresAt: '',
+          resetOtpAttempts: '',
+          loginFailedAttempts: '',
+          loginLockedUntil: ''
+        }
       }
     );
     if (!result.matchedCount) return res.status(401).json({ success: false, message: 'Recovery session has expired' });
