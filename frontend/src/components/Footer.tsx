@@ -1,5 +1,5 @@
 import React from 'react';
-import { displayValue, organization } from '../config/organization';
+import { displayValue, organization, registeredOfficeAddress } from '../config/organization';
 import { 
   Heart, 
   ShieldCheck, 
@@ -38,23 +38,31 @@ export const Footer: React.FC<FooterProps> = ({
                 AP
               </div>
               <div className="flex items-baseline gap-1.5">
-            <span className="text-xl font-bold font-serif text-emerald-950 tracking-tight">{organization.legalName || 'Akshaya Patra Welfare Foundation'}</span>
+                  <span className="text-xl font-bold font-serif text-emerald-950 tracking-tight">{organization.legalName || organization.shortName || 'Akshaya Patra Welfare Foundation'}</span>
               </div>
             </div>
+            {organization.tagline && <p className="-mt-2 text-xs font-semibold tracking-wide text-emerald-800">{organization.tagline}</p>}
 
             <p className="max-w-md text-xs leading-relaxed text-[#526b64] sm:text-sm">
-              A registered Section 8 Non-Profit company dedicated to bridging severe healthcare and educational disparities in isolated rural hamlets across India. We deploy mobile medical clinics, provide free medicines, sponsor rural girl-child schooling, and deliver classroom STEM packs.
+              {organization.govtComplianceNote || `A ${organization.legalStructure || (organization.isNonProfit ? 'non-profit organization' : 'organization')} dedicated to bringing care and opportunity beyond the last mile.`}
             </p>
 
             <div className="flex items-center gap-2 pt-2">
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-900">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Section 8 Licensed
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-900">
-                12A & 80G Certified
-              </span>
+              {organization.legalStructure && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-900">
+                <ShieldCheck className="w-3.5 h-3.5" />{organization.legalStructure}
+              </span>}
+              {(organization.panVerified || organization.tanVerified) && <span className="inline-flex items-center gap-1 rounded-full border border-amber-900/10 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-900">
+                {organization.panVerified && 'PAN verified'}{organization.panVerified && organization.tanVerified && ' · '}{organization.tanVerified && 'TAN verified'}
+              </span>}
             </div>
+            <p className="max-w-md text-[10px] leading-relaxed text-slate-500">
+              {[
+                organization.pan && `PAN ${organization.pan}`,
+                organization.tan && `TAN ${organization.tan}`,
+                organization.dateOfIncorporation && `Incorporated ${organization.dateOfIncorporation}`,
+                organization.operationScope && `Operations: ${organization.operationScope}`,
+              ].filter(Boolean).join(' · ')}
+            </p>
 
           </div>
 
@@ -139,7 +147,7 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="space-y-3 text-xs text-[#526b64]">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span>Akshaya Patra Welfare Foundation, Bangalore Rural & Regional Field Units, Karnataka, India</span>
+                <span>{registeredOfficeAddress || 'Registered office address not configured'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -147,7 +155,9 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>+91 98765 43210 (Toll-Free Aid Desk)</span>
+                {organization.phone
+                  ? <a href={`tel:+91${organization.phone.replace(/\D/g, '')}`} className="transition hover:text-emerald-900">+91 {organization.phone}</a>
+                  : <span>Phone contact not configured</span>}
               </div>
             </div>
 

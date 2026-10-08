@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowDown, ArrowRight, BookOpen, Heart, ShieldCheck, ShoppingBag, Stethoscope } from 'lucide-react';
+import { organization } from '../config/organization';
 
 interface HeroSectionProps {
   onOpenDonate: () => void;
@@ -69,7 +70,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDonate, onOpenSh
             />
             <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#102f29]/55 via-transparent to-[#102f29]/5" />
             <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/75 px-3 py-2 text-[11px] font-semibold text-[#174c40] shadow-md backdrop-blur-lg sm:left-5 sm:top-5 sm:text-xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-600" />Care beyond the last mile
+              <span className="h-2 w-2 rounded-full bg-emerald-600" />{organization.tagline || 'Care beyond the last mile'}
             </div>
             <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 sm:inset-x-5 sm:bottom-5">
               <div className="rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur-xl sm:px-5 sm:py-4">

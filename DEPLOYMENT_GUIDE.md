@@ -96,15 +96,15 @@ The finance section is explicitly not a net-profit or audited accounting report:
 
 ## Frontend environment variables
 
-`VITE_API_URL` is connected to the backend host by the Blueprint. The frontend normalizes it to HTTPS when the scheme is omitted and appends `/api` itself.
+`VITE_API_URL` is set in the Blueprint to `https://testone-viby.onrender.com`. The frontend appends `/api` itself, so API requests use `https://testone-viby.onrender.com/api`. For local builds, set the same value in `frontend/.env` (or copy `frontend/.env.example`).
 
-Set the `VITE_ORG_*` variables on **`akshaya-patra-frontend`** before its build. They configure public site details including:
+The Blueprint also provides the public organization and website values from `frontend/.env.example`: legal name and short name, tagline, PAN/TAN and incorporation details, legal structure and operating scope, registered office and contact phone, verification flags, compliance note, website title/subtitle, and receipt availability. Confirm these values in the Render environment before deploying; static frontend environment values are compiled at build time.
 
 - Organization name, CIN, Section 8 registration, 12A/80G URNs, Darpan ID, CSR-1 number, and GSTIN.
 - 80G deduction percentage, authorized signatory, and Form 10BE order number.
 - Public bank account name, bank, account number, IFSC, branch, escrow label, and audit description.
 
-Use the exact variable names from [`frontend/.env.example`](frontend/.env.example). These values are compiled into the browser app because they use the `VITE_` prefix. **They are public to site visitors. Do not put passwords, private keys, database URIs, or other secrets in frontend variables.**
+Use the exact variable names from [`frontend/.env.example`](frontend/.env.example). These values are compiled into the browser app because they use the `VITE_` prefix. **They are public to site visitors. Do not put passwords, private keys, database URIs, bank credentials, or other secrets in frontend variables. Review bank account display values carefully before publishing.**
 
 If an organization value changes in Render, redeploy the frontend so the new value is included in the static build.
 

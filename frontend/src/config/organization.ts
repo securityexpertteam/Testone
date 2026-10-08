@@ -3,7 +3,14 @@ const read = (name: string) => String(env[name] || '').trim();
 
 export const organization = {
   legalName: read('VITE_ORG_LEGAL_NAME'),
+  shortName: read('VITE_ORG_SHORT_NAME'),
+  tagline: read('VITE_ORG_TAGLINE'),
   cin: read('VITE_ORG_CIN'),
+  pan: read('VITE_ORG_PAN'),
+  tan: read('VITE_ORG_TAN'),
+  dateOfIncorporation: read('VITE_ORG_DATE_OF_INCORPORATION'),
+  legalStructure: read('VITE_ORG_LEGAL_STRUCTURE'),
+  operationScope: read('VITE_ORG_OPERATION_SCOPE'),
   section8Registration: read('VITE_ORG_SECTION8_REGISTRATION'),
   urn12A: read('VITE_ORG_12A_URN'),
   urn80G: read('VITE_ORG_80G_URN'),
@@ -20,6 +27,33 @@ export const organization = {
   escrowAccountLabel: read('VITE_ORG_ESCROW_ACCOUNT_LABEL'),
   auditDescription: read('VITE_ORG_AUDIT_DESCRIPTION'),
   orderNumber80G: read('VITE_ORG_80G_ORDER_NUMBER'),
+  phone: read('VITE_ORG_PHONE'),
+  addressLine1: read('VITE_ORG_ADDRESS_LINE1'),
+  locality: read('VITE_ORG_LOCALITY'),
+  area: read('VITE_ORG_AREA'),
+  city: read('VITE_ORG_CITY'),
+  region: read('VITE_ORG_REGION'),
+  state: read('VITE_ORG_STATE'),
+  pincode: read('VITE_ORG_PINCODE'),
+  country: read('VITE_ORG_COUNTRY'),
+  isNonProfit: read('VITE_ORG_NON_PROFIT').toLowerCase() === 'true',
+  panVerified: read('VITE_ORG_PAN_VERIFIED').toLowerCase() === 'true',
+  tanVerified: read('VITE_ORG_TAN_VERIFIED').toLowerCase() === 'true',
+  govtComplianceNote: read('VITE_ORG_GOVT_COMPLIANCE_NOTE'),
+  websiteTitle: read('VITE_WEBSITE_TITLE'),
+  websiteSubtitle: read('VITE_WEBSITE_SUBTITLE'),
+  donationReceiptsEnabled: read('VITE_DONATION_RECEIPTS_ENABLED').toLowerCase() === 'true',
 };
 
 export const displayValue = (value: string, fallback = 'Not configured') => value || fallback;
+
+export const registeredOfficeAddress = [
+  organization.addressLine1,
+  organization.locality,
+  organization.area,
+  organization.city,
+  organization.region,
+  organization.state,
+  organization.pincode,
+  organization.country,
+].filter(Boolean).join(', ');

@@ -21,6 +21,7 @@ import { AdminPortal } from './components/AdminPortal';
 import { Footer } from './components/Footer';
 import { API_BASE_URL } from './utils/api';
 import { getReferralId } from './utils/referral';
+import { organization } from './config/organization';
 
 interface PublicRaffleCampaign {
   campaignId: string;
@@ -35,6 +36,20 @@ interface PublicRaffleCampaign {
 function PublicApp() {
   useEffect(() => {
     getReferralId();
+  }, []);
+
+  useEffect(() => {
+    const title = [organization.websiteTitle || organization.shortName, organization.websiteSubtitle].filter(Boolean).join(' | ');
+    if (title) document.title = title;
+
+    const description = organization.websiteSubtitle || organization.tagline;
+    if (description) {
+      document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+      document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
+    }
+    if (organization.websiteTitle) {
+      document.querySelector('meta[property="og:title"]')?.setAttribute('content', organization.websiteTitle);
+    }
   }, []);
 
   // Navigation & Modals State
@@ -221,8 +236,14 @@ function PublicApp() {
   const handleDonationComplete = (record: DonationRecord) => {
     setTaxReceipts((prev) => [record, ...prev]);
     setActiveReceiptId(record.id);
-    setIsTaxPortalOpen(true);
-    showToast(`Donation of ₹${record.amount.toLocaleString('en-IN')} successful! Your 80G Certificate is ready.`);
+    if (organization.donationReceiptsEnabled) setIsTaxPortalOpen(true);
+    showToast(organization.donationReceiptsEnabled
+      ? `Donation of ₹${record.amount.toLocaleString('en-IN')} successful! Your 80G Certificate is ready.`
+      : `Donation of ₹${record.amount.toLocaleString('en-IN')} successful!`);
+  };
+
+  const openTaxPortal = () => {
+    if (organization.donationReceiptsEnabled) setIsTaxPortalOpen(true);
   };
 
   // Navigation smoothly scrolls to anchor
@@ -258,7 +279,7 @@ function PublicApp() {
           setSelectedCauseForDonate(null);
           setIsDonateOpen(true);
         }}
-        onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
+        onOpenTaxPortal={openTaxPortal}
         onNavigate={handleNavigate}
       />
       {raffleCampaigns.some(campaign => campaign.status === 'DRAWN' && campaign.draw?.winner?.customerName) && (() => {
@@ -290,7 +311,7 @@ function PublicApp() {
             setIsDonateOpen(true);
           }}
           onOpenShop={() => handleNavigate('shop-goods')}
-          onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
+          onOpenTaxPortal={openTaxPortal}
         />
 
         {/* The two causes are the primary path after the landing section. */}
@@ -340,7 +361,7 @@ function PublicApp() {
             setIsDonateOpen(true);
           }}
           onOpenShop={() => handleNavigate('shop-goods')}
-          onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
+          onOpenTaxPortal={openTaxPortal}
         />
 
         {/* How Pledges Work */}
@@ -349,7 +370,7 @@ function PublicApp() {
             setSelectedCauseForDonate(null);
             setIsDonateOpen(true);
           }}
-          onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
+          onOpenTaxPortal={openTaxPortal}
         />
 
         {/* Section 8 Transparency & Statutory Governance */}
@@ -363,7 +384,7 @@ function PublicApp() {
           setSelectedCauseForDonate(null);
           setIsDonateOpen(true);
         }}
-        onOpenTaxPortal={() => setIsTaxPortalOpen(true)}
+        onOpenTaxPortal={openTaxPortal}
         onOpenSellerPortal={() => setIsSellerCollaborationOpen(true)}
         onNavigate={handleNavigate}
       />
@@ -422,7 +443,7 @@ function PublicApp() {
       />
 
       {/* "My 80G" Tax Certificate Portal & Viewer */}
-      <TaxReceiptModal 
+      {organization.donationReceiptsEnabled && <TaxReceiptModal
         isOpen={isTaxPortalOpen}
         onClose={() => setIsTaxPortalOpen(false)}
         records={taxReceipts}
@@ -432,7 +453,7 @@ function PublicApp() {
           setSelectedCauseForDonate(null);
           setIsDonateOpen(true);
         }}
-      />
+      />}
 
       {/* Welfare Goods Cart Drawer */}
       <CartDrawer 
